@@ -76,13 +76,15 @@ const CandidateBoard = ({
         const formData = new FormData();
         formData.append("file", file);
         
+        const settings = getSettings();
+        const pdfUrl = settings?.pdfApiUrl || "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
         const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
         const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const fnUrl = `https://${projectId}.supabase.co/functions/v1/parse-pdf`;
         
         const res = await fetch(fnUrl, {
           method: "POST",
-          headers: { "apikey": anonKey },
+          headers: { "apikey": anonKey, "x-pdf-api-url": pdfUrl },
           body: formData,
         });
         if (!res.ok) {

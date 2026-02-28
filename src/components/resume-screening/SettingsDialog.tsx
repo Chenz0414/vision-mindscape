@@ -25,6 +25,7 @@ const DEFAULT_PROMPT = `你是一位专业的HR助手。请对比以下岗位描
 
 const SettingsDialog = () => {
   const [open, setOpen] = useState(false);
+  const [pdfApiUrl, setPdfApiUrl] = useState("http://connect.westd.seetacloud.com:37672/api/v1/parse/upload");
   const [apiUrl, setApiUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("gpt-4o-mini");
@@ -34,6 +35,7 @@ const SettingsDialog = () => {
     const saved = localStorage.getItem("rs-settings");
     if (saved) {
       const s: LLMSettings = JSON.parse(saved);
+      setPdfApiUrl(s.pdfApiUrl || "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload");
       setApiUrl(s.apiUrl);
       setApiKey(s.apiKey);
       setModel(s.model || "gpt-4o-mini");
@@ -42,7 +44,7 @@ const SettingsDialog = () => {
   }, [open]);
 
   const handleSave = () => {
-    const settings: LLMSettings = { apiUrl, apiKey, model, promptTemplate };
+    const settings: LLMSettings = { pdfApiUrl, apiUrl, apiKey, model, promptTemplate };
     localStorage.setItem("rs-settings", JSON.stringify(settings));
     toast({ title: "设置已保存" });
     setOpen(false);
@@ -57,9 +59,24 @@ const SettingsDialog = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>大模型设置</DialogTitle>
+            <DialogTitle>系统设置</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* PDF解析 */}
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-2 block">📄 PDF 解析服务</label>
+              <Input
+                value={pdfApiUrl}
+                onChange={(e) => setPdfApiUrl(e.target.value)}
+                placeholder="http://your-server/api/v1/parse/upload"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">文件解析接口，需返回 {"{ success: true, data: '文本' }"}</p>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            {/* LLM */}
+            <label className="text-xs font-semibold text-foreground block">🤖 大模型配置</label>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">API 接口地址</label>
               <Input
