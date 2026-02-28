@@ -73,6 +73,53 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
     }
   }, []);
 
+  // Fuzzy find: try exact match first, then normalized match, then substring match
+  const findExcerptInText = useCallback((text: string, excerpt: string): { start: number; end: number } | null => {
+    if (!excerpt || excerpt.length < 4) return null;
+
+    // 1. Exact match
+    const exactIdx = text.indexOf(excerpt);
+    if (exactIdx !== -1) return { start: exactIdx, end: exactIdx + excerpt.length };
+
+    // 2. Normalize whitespace and try again
+    const normalize = (s: string) => s.replace(/\s+/g, "");
+    const normText = normalize(text);
+    const normExcerpt = normalize(excerpt);
+    const normIdx = normText.indexOf(normExcerpt);
+    if (normIdx !== -1) {
+      // Map back to original positions
+      let origStart = -1, origEnd = -1, normCursor = 0;
+      for (let i = 0; i < text.length && origEnd === -1; i++) {
+        if (/\s/.test(text[i])) continue;
+        if (normCursor === normIdx) origStart = i;
+        if (normCursor === normIdx + normExcerpt.length - 1) { origEnd = i + 1; break; }
+        normCursor++;
+      }
+      if (origStart !== -1 && origEnd !== -1) return { start: origStart, end: origEnd };
+    }
+
+    // 3. Try first 10+ chars as substring anchor
+    const anchor = excerpt.slice(0, Math.min(15, excerpt.length)).replace(/\s+/g, "");
+    if (anchor.length >= 4) {
+      const normAnchorIdx = normText.indexOf(anchor);
+      if (normAnchorIdx !== -1) {
+        let origStart = -1, normCursor = 0;
+        for (let i = 0; i < text.length; i++) {
+          if (/\s/.test(text[i])) continue;
+          if (normCursor === normAnchorIdx) { origStart = i; break; }
+          normCursor++;
+        }
+        if (origStart !== -1) {
+          // Estimate end using excerpt length
+          const estimatedEnd = Math.min(text.length, origStart + excerpt.length + 20);
+          return { start: origStart, end: estimatedEnd };
+        }
+      }
+    }
+
+    return null;
+  }, []);
+
   // Build highlighted text segments
   const renderHighlightedText = () => {
     if (!risks.length) {
@@ -82,21 +129,30 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
     // Find excerpts in the text and build segments
     const highlights: { start: number; end: number; risk: RiskItem }[] = [];
     for (const risk of risks) {
-      const idx = contractText.indexOf(risk.excerpt);
-      if (idx !== -1) {
-        highlights.push({ start: idx, end: idx + risk.excerpt.length, risk });
+      const match = findExcerptInText(contractText, risk.excerpt);
+      if (match) {
+        highlights.push({ start: match.start, end: match.end, risk });
       }
     }
+    // Remove overlapping highlights (keep earlier ones)
     highlights.sort((a, b) => a.start - b.start);
+    const filtered: typeof highlights = [];
+    let lastEnd = 0;
+    for (const h of highlights) {
+      if (h.start >= lastEnd) {
+        filtered.push(h);
+        lastEnd = h.end;
+      }
+    }
 
-    if (highlights.length === 0) {
+    if (filtered.length === 0) {
       return <p className="whitespace-pre-wrap text-sm leading-7 text-foreground/80">{contractText}</p>;
     }
 
     const segments: React.ReactNode[] = [];
     let cursor = 0;
 
-    for (const h of highlights) {
+    for (const h of filtered) {
       if (h.start > cursor) {
         segments.push(
           <span key={`t-${cursor}`} className="whitespace-pre-wrap">
