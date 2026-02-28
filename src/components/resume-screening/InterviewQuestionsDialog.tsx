@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { MessageSquare, Loader2, Copy, CheckCheck } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Candidate, LLMSettings } from "./types";
@@ -42,6 +42,27 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState("");
   const [copied, setCopied] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startProgress = () => {
+    setProgress(0);
+    if (progressRef.current) clearInterval(progressRef.current);
+    const start = Date.now();
+    progressRef.current = setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000;
+      // Asymptotic curve: approaches 95% over ~60s
+      const p = Math.min(95, Math.round((elapsed / (elapsed + 15)) * 100));
+      setProgress(p);
+    }, 300);
+  };
+
+  const stopProgress = () => {
+    if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
+    setProgress(100);
+  };
+
+  useEffect(() => () => { if (progressRef.current) clearInterval(progressRef.current); }, []);
 
   const generate = async () => {
     const settings = getSettings();
@@ -52,6 +73,7 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
 
     setLoading(true);
     setContent("");
+    startProgress();
 
     const prompt = INTERVIEW_PROMPT
       .replace("{jd}", jobDescription)
@@ -82,6 +104,7 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
     } catch (err: any) {
       toast({ title: "面试题生成失败", description: err.message, variant: "destructive" });
     } finally {
+      stopProgress();
       setLoading(false);
     }
   };
@@ -104,8 +127,8 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
           <MessageSquare className="w-3.5 h-3.5" />
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base">
             <MessageSquare className="w-4 h-4 text-primary" />
             AI 面试题 — {candidate.name}
@@ -113,13 +136,20 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
         </DialogHeader>
 
         {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
+          <div className="flex-1 flex flex-col items-center justify-center py-16 gap-4">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">正在生成面试题…</p>
+            <div className="w-full max-w-xs space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>正在生成面试题…</span>
+                <span className="text-primary font-medium">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+            <p className="text-xs text-muted-foreground">AI 正在分析岗位要求与候选人简历，预计需要 30-60 秒</p>
           </div>
         ) : content ? (
           <>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 flex-shrink-0">
               <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
                 {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? "已复制" : "复制"}
@@ -128,11 +158,20 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
                 重新生成
               </Button>
             </div>
-            <ScrollArea className="flex-1 max-h-[60vh]">
-              <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-2" style={{ maxHeight: '60vh' }}>
+              <div className="prose prose-sm dark:prose-invert max-w-none
+                prose-headings:text-foreground prose-headings:mt-6 prose-headings:mb-3
+                prose-h2:text-lg prose-h2:font-bold prose-h2:border-b prose-h2:border-border prose-h2:pb-2
+                prose-h3:text-base prose-h3:font-semibold
+                prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-3
+                prose-strong:text-foreground
+                prose-li:text-muted-foreground prose-li:my-1
+                prose-ul:my-2 prose-ol:my-2
+                prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground prose-blockquote:bg-muted/30 prose-blockquote:rounded-r-md prose-blockquote:py-1 prose-blockquote:px-3
+              ">
                 <ReactMarkdown>{content}</ReactMarkdown>
               </div>
-            </ScrollArea>
+            </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
