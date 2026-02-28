@@ -7,7 +7,7 @@ import type { Job, Candidate, CandidateStatus } from "./types";
 import type { LLMSettings } from "./types";
 import ScoreRing from "./ScoreRing";
 
-const PDF_API = "http://connect.westd.seetacloud.com:37672/api/v1/parse_upload";
+const PDF_API = "https://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
 
 const STATUS_LABELS: Record<CandidateStatus, { label: string; icon: React.ReactNode }> = {
   uploading: { label: "上传中…", icon: <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> },
@@ -77,9 +77,13 @@ const CandidateBoard = ({
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch(PDF_API, { method: "POST", body: formData });
-        if (!res.ok) throw new Error(`PDF解析失败: ${res.status}`);
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => null);
+          throw new Error(errBody?.error?.message || `PDF解析失败: ${res.status}`);
+        }
         const data = await res.json();
-        resumeText = typeof data === "string" ? data : data.text || data.content || JSON.stringify(data);
+        if (!data.success) throw new Error(data.error?.message || "解析返回失败");
+        resumeText = data.data || "";
       } catch (err: any) {
         toast({ title: "PDF 解析错误", description: err.message, variant: "destructive" });
         updateCandidate(candidateId, { status: "error", error: err.message });
