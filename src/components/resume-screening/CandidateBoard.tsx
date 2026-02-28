@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Upload, FileText, Loader2, Brain, CheckCircle2, AlertCircle, Briefcase } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { parsePdfLocally } from "./pdfLocalParser";
 import type { Job, Candidate, CandidateStatus } from "./types";
 import type { LLMSettings } from "./types";
 import ScoreRing from "./ScoreRing";
@@ -72,6 +73,8 @@ const CandidateBoard = ({
       // Step 1: Upload PDF for text extraction
       updateCandidate(candidateId, { status: "extracting" });
       let resumeText = "";
+      
+      // Try remote API first, fallback to local PDF.js
       try {
         const formData = new FormData();
         formData.append("file", file);
@@ -94,9 +97,21 @@ const CandidateBoard = ({
         const data = await res.json();
         if (!data.success) throw new Error(data.error?.message || data.error || "解析返回失败");
         resumeText = data.data || "";
-      } catch (err: any) {
-        toast({ title: "PDF 解析错误", description: err.message, variant: "destructive" });
-        updateCandidate(candidateId, { status: "error", error: err.message });
+      } catch (remoteErr: any) {
+        console.warn("远程解析失败，降级到本地 PDF.js:", remoteErr.message);
+        toast({ title: "远程解析不可用，已切换本地解析", description: remoteErr.message });
+        try {
+          resumeText = await parsePdfLocally(file);
+        } catch (localErr: any) {
+          toast({ title: "PDF 解析失败", description: localErr.message, variant: "destructive" });
+          updateCandidate(candidateId, { status: "error", error: localErr.message });
+          return;
+        }
+      }
+      
+      if (!resumeText.trim()) {
+        toast({ title: "PDF 解析结果为空", description: "该文件可能是扫描件，无法提取文字", variant: "destructive" });
+        updateCandidate(candidateId, { status: "error", error: "解析结果为空" });
         return;
       }
 
