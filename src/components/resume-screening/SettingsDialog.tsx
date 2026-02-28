@@ -26,9 +26,9 @@ const DEFAULT_PROMPT = `你是一位专业的HR助手。请对比以下岗位描
 const SettingsDialog = () => {
   const [open, setOpen] = useState(false);
   const [pdfApiUrl, setPdfApiUrl] = useState("http://connect.westd.seetacloud.com:37672/api/v1/parse/upload");
-  const [apiUrl, setApiUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("gpt-4o-mini");
+  const [apiUrl, setApiUrl] = useState("https://yunwu.ai/v1/chat/completions");
+  const [apiKey, setApiKey] = useState("sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg");
+  const [model, setModel] = useState("glm-4.7");
   const [promptTemplate, setPromptTemplate] = useState(DEFAULT_PROMPT);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const SettingsDialog = () => {
       setPdfApiUrl(s.pdfApiUrl || "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload");
       setApiUrl(s.apiUrl);
       setApiKey(s.apiKey);
-      setModel(s.model || "gpt-4o-mini");
+      setModel(s.model || "glm-4.7");
       setPromptTemplate(s.promptTemplate || DEFAULT_PROMPT);
     }
   }, [open]);

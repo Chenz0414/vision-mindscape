@@ -48,34 +48,20 @@ const ContractAudit = () => {
 
   const handleStartAudit = async () => {
     const settingsRaw = localStorage.getItem(STORAGE_KEY);
-    const settings: ContractSettings | null = settingsRaw ? JSON.parse(settingsRaw) : null;
-
-    if (!settings?.apiUrl || !settings?.apiKey) {
-      // Use mock data for demo
-      setIsAuditing(true);
-      startProgressSimulation();
-
-      // Compute excerpt positions for mock data
-      const enrichedRisks = MOCK_RISKS.map((r) => {
-        const idx = contractText.indexOf(r.excerpt);
-        return { ...r, excerptStart: idx, excerptEnd: idx !== -1 ? idx + r.excerpt.length : -1 };
-      });
-
-      setTimeout(() => {
-        stopProgress();
-        setRisks(enrichedRisks);
-        setSummary("发现 2 项高危风险、1 项提示信息，建议重点关注产权归属和管辖权条款。");
-        setHasResult(true);
-        setIsAuditing(false);
-      }, 2500);
-      return;
-    }
+    const defaults: ContractSettings = {
+      apiUrl: "https://yunwu.ai/v1/chat/completions",
+      apiKey: "sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg",
+      model: "glm-4.7",
+      promptTemplate: DEFAULT_PROMPT,
+    };
+    const settings: ContractSettings = settingsRaw ? { ...defaults, ...JSON.parse(settingsRaw) } : defaults;
 
     // Real API call
     setIsAuditing(true);
     setHasResult(false);
     startProgressSimulation();
 
+    // Remove duplicate block
     const prompt = (settings.promptTemplate || DEFAULT_PROMPT).replace("{contract}", contractText);
 
     try {
@@ -86,7 +72,7 @@ const ContractAudit = () => {
           Authorization: `Bearer ${settings.apiKey}`,
         },
         body: JSON.stringify({
-          model: settings.model || "gpt-4o-mini",
+          model: settings.model || "glm-4.7",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
         }),

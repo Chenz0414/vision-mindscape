@@ -10,9 +10,9 @@ import { DEFAULT_PROMPT, STORAGE_KEY } from "./constants";
 
 const SettingsDialog = () => {
   const [open, setOpen] = useState(false);
-  const [apiUrl, setApiUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("gpt-4o-mini");
+  const [apiUrl, setApiUrl] = useState("https://yunwu.ai/v1/chat/completions");
+  const [apiKey, setApiKey] = useState("sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg");
+  const [model, setModel] = useState("glm-4.7");
   const [promptTemplate, setPromptTemplate] = useState(DEFAULT_PROMPT);
 
   useEffect(() => {
@@ -21,7 +21,7 @@ const SettingsDialog = () => {
       const s: ContractSettings = JSON.parse(saved);
       setApiUrl(s.apiUrl);
       setApiKey(s.apiKey);
-      setModel(s.model || "gpt-4o-mini");
+      setModel(s.model || "glm-4.7");
       setPromptTemplate(s.promptTemplate || DEFAULT_PROMPT);
     }
   }, [open]);

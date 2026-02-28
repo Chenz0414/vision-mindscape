@@ -28,9 +28,17 @@ interface Props {
   selectedCandidateId: string | null;
 }
 
-const getSettings = (): LLMSettings | null => {
+const DEFAULT_SETTINGS: LLMSettings = {
+  apiUrl: "https://yunwu.ai/v1/chat/completions",
+  apiKey: "sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg",
+  model: "glm-4.7",
+  promptTemplate: "",
+  pdfApiUrl: "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload",
+};
+
+const getSettings = (): LLMSettings => {
   const s = localStorage.getItem("rs-settings");
-  return s ? JSON.parse(s) : null;
+  return s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
 };
 
 const DEFAULT_PROMPT = `你是一位专业的HR助手。请对比以下岗位描述和候选人简历，返回严格的JSON格式（不要markdown包裹）：
@@ -159,7 +167,7 @@ const CandidateBoard = ({
 
       // Step 2: LLM evaluation
       const settings = getSettings();
-      if (!settings?.apiUrl || !settings?.apiKey) {
+      if (!settings.apiUrl || !settings.apiKey) {
         toast({ title: "请先配置大模型设置", description: "点击右上角设置按钮配置 API 信息", variant: "destructive" });
         updateCandidate(candidateId, { status: "error", error: "未配置大模型" });
         return;
@@ -177,7 +185,7 @@ const CandidateBoard = ({
             Authorization: `Bearer ${settings.apiKey}`,
           },
           body: JSON.stringify({
-            model: settings.model || "gpt-4o-mini",
+            model: settings.model || "glm-4.7",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.3,
           }),

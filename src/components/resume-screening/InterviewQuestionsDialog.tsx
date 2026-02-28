@@ -28,9 +28,17 @@ const INTERVIEW_PROMPT = `你是一位资深HR面试官。请根据以下岗位�
 - 优势：{strengths}
 - 风险：{risks}`;
 
-const getSettings = (): LLMSettings | null => {
+const DEFAULT_SETTINGS: LLMSettings = {
+  apiUrl: "https://yunwu.ai/v1/chat/completions",
+  apiKey: "sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg",
+  model: "glm-4.7",
+  promptTemplate: "",
+  pdfApiUrl: "",
+};
+
+const getSettings = (): LLMSettings => {
   const s = localStorage.getItem("rs-settings");
-  return s ? JSON.parse(s) : null;
+  return s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
 };
 
 interface Props {
@@ -72,10 +80,6 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
 
   const generate = async () => {
     const settings = getSettings();
-    if (!settings?.apiUrl || !settings?.apiKey) {
-      toast({ title: "请先配置大模型设置", description: "点击右上角设置按钮配置 API 信息", variant: "destructive" });
-      return;
-    }
 
     setLoading(true);
     setContent("");
@@ -97,7 +101,7 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
           Authorization: `Bearer ${settings.apiKey}`,
         },
         body: JSON.stringify({
-          model: settings.model || "gpt-4o-mini",
+          model: settings.model || "glm-4.7",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
         }),
