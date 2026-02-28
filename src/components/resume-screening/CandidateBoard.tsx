@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { Upload, FileText, Loader2, Brain, CheckCircle2, AlertCircle, Briefcase, Trash2 } from "lucide-react";
@@ -7,12 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { parsePdfLocally } from "./pdfLocalParser";
 import type { Job, Candidate, CandidateStatus, LLMSettings } from "./types";
 import ScoreRing from "./ScoreRing";
+import { Progress } from "@/components/ui/progress";
 
 const STATUS_LABELS: Record<CandidateStatus, { label: string; icon: React.ReactNode }> = {
   uploading: { label: "上传中…", icon: <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> },
   extracting: { label: "提取简历文本…", icon: <FileText className="w-3.5 h-3.5 text-primary animate-pulse" /> },
   evaluating: { label: "AI 评估中…", icon: <Brain className="w-3.5 h-3.5 text-primary animate-pulse" /> },
-  done: { label: "已完成", icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> },
+  done: { label: "已完成", icon: <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> },
   error: { label: "处理失败", icon: <AlertCircle className="w-3.5 h-3.5 text-destructive" /> },
 };
 
@@ -65,21 +66,54 @@ const CandidateBoard = ({
     [setAllCandidates]
   );
 
+  // Simulated progress ticker — increments progress gradually until stopped
+  const progressTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  const startProgressSimulation = useCallback(
+    (id: string, from: number, to: number, durationMs: number) => {
+      // Clear existing timer
+      const existing = progressTimers.current.get(id);
+      if (existing) clearInterval(existing);
+
+      const steps = Math.max(1, Math.floor(durationMs / 200));
+      const increment = (to - from) / steps;
+      let current = from;
+
+      const timer = setInterval(() => {
+        current = Math.min(current + increment, to);
+        updateCandidate(id, { progress: Math.round(current) });
+        if (current >= to) {
+          clearInterval(timer);
+          progressTimers.current.delete(id);
+        }
+      }, 200);
+      progressTimers.current.set(id, timer);
+    },
+    [updateCandidate]
+  );
+
+  const stopProgressSimulation = useCallback((id: string) => {
+    const timer = progressTimers.current.get(id);
+    if (timer) {
+      clearInterval(timer);
+      progressTimers.current.delete(id);
+    }
+  }, []);
+
   const processFile = useCallback(
     async (file: File, candidateId: string) => {
       if (!activeJob) return;
 
-      // Step 1: Upload PDF for text extraction
-      updateCandidate(candidateId, { status: "extracting" });
+      // Step 1: PDF text extraction
+      updateCandidate(candidateId, { status: "extracting", progress: 5 });
+      startProgressSimulation(candidateId, 5, 45, 4000);
+
       let resumeText = "";
       
-      // Try local PDF.js first (fast, no network dependency)
-      // Falls back to remote API only if local fails
       try {
         resumeText = await parsePdfLocally(file);
       } catch (localErr: any) {
         console.warn("本地解析失败，尝试远程 API:", localErr.message);
-        // Try remote as fallback
         try {
           const formData = new FormData();
           formData.append("file", file);
@@ -103,19 +137,24 @@ const CandidateBoard = ({
           if (!data.success) throw new Error(data.error || "远程解析失败");
           resumeText = data.data || "";
         } catch (remoteErr: any) {
+          stopProgressSimulation(candidateId);
           toast({ title: "PDF 解析失败", description: `本地: ${localErr.message} | 远程: ${remoteErr.message}`, variant: "destructive" });
-          updateCandidate(candidateId, { status: "error", error: "解析失败" });
+          updateCandidate(candidateId, { status: "error", progress: 0, error: "解析失败" });
           return;
         }
       }
       
       if (!resumeText.trim()) {
+        stopProgressSimulation(candidateId);
         toast({ title: "PDF 解析结果为空", description: "该文件可能是扫描件，无法提取文字", variant: "destructive" });
-        updateCandidate(candidateId, { status: "error", error: "解析结果为空" });
+        updateCandidate(candidateId, { status: "error", progress: 0, error: "解析结果为空" });
         return;
       }
 
-      updateCandidate(candidateId, { resumeText, status: "evaluating" });
+      // Step 2: LLM evaluation
+      stopProgressSimulation(candidateId);
+      updateCandidate(candidateId, { resumeText, status: "evaluating", progress: 50 });
+      startProgressSimulation(candidateId, 50, 90, 8000);
 
       // Step 2: LLM evaluation
       const settings = getSettings();
@@ -150,8 +189,10 @@ const CandidateBoard = ({
         if (!jsonMatch) throw new Error("AI 未返回有效 JSON");
         const parsed = JSON.parse(jsonMatch[0]);
 
+        stopProgressSimulation(candidateId);
         updateCandidate(candidateId, {
           status: "done",
+          progress: 100,
           name: parsed.name || "未知",
           score: parsed.score || 0,
           tags: parsed.tags || [],
@@ -160,11 +201,12 @@ const CandidateBoard = ({
           aiSummary: parsed.summary || "",
         });
       } catch (err: any) {
+        stopProgressSimulation(candidateId);
         toast({ title: "AI 评估错误", description: err.message, variant: "destructive" });
-        updateCandidate(candidateId, { status: "error", error: err.message });
+        updateCandidate(candidateId, { status: "error", progress: 0, error: err.message });
       }
     },
-    [activeJob, updateCandidate]
+    [activeJob, updateCandidate, startProgressSimulation, stopProgressSimulation]
   );
 
   const onDrop = useCallback(
@@ -179,6 +221,7 @@ const CandidateBoard = ({
         fileName: file.name,
         name: file.name.replace(/\.pdf$/i, ""),
         status: "uploading" as const,
+        progress: 0,
         score: 0,
         tags: [],
         strengths: [],
@@ -261,13 +304,19 @@ const CandidateBoard = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium truncate">{candidate.name}</span>
-                  {candidate.status !== "done" && (
+                  {candidate.status !== "done" && candidate.status !== "error" && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       {STATUS_LABELS[candidate.status].icon}
                       {STATUS_LABELS[candidate.status].label}
+                      <span className="text-primary font-medium">{candidate.progress}%</span>
                     </span>
                   )}
                 </div>
+
+                {/* Progress bar for in-progress states */}
+                {candidate.status !== "done" && candidate.status !== "error" && (
+                  <Progress value={candidate.progress} className="h-1.5 mt-1" />
+                )}
 
                 {candidate.status === "done" && (
                   <div className="flex flex-wrap gap-1.5">

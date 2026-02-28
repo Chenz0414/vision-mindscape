@@ -20,6 +20,7 @@ export interface Candidate {
   fileName: string;
   name: string;
   status: CandidateStatus;
+  progress: number; // 0-100 simulated progress
   score: number;
   tags: string[];
   strengths: string[];
