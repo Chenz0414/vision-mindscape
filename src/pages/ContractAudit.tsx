@@ -84,26 +84,54 @@ const ContractAudit = () => {
       if (!res.ok) throw new Error(`API 调用失败: ${res.status}`);
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content || "";
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("AI 未返回有效 JSON");
-      const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Try to extract JSON — could be object {risks:[...]} or array [...]
+      let risksArray: any[] = [];
+      let summaryText = "";
+      
+      // Remove markdown code fences if present
+      const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+      
+      // Try parsing as array first, then as object
+      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+      const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+      
+      if (arrayMatch) {
+        try {
+          const arr = JSON.parse(arrayMatch[0]);
+          if (Array.isArray(arr)) {
+            risksArray = arr;
+          }
+        } catch {}
+      }
+      
+      if (risksArray.length === 0 && objectMatch) {
+        try {
+          const obj = JSON.parse(objectMatch[0]);
+          risksArray = obj.risks || [];
+          summaryText = obj.summary || "";
+        } catch {}
+      }
+      
+      if (risksArray.length === 0) throw new Error("AI 未返回有效 JSON");
 
-      const apiRisks: RiskItem[] = (parsed.risks || []).map((r: any, i: number) => {
-        const idx = contractText.indexOf(r.excerpt || "");
+      const apiRisks: RiskItem[] = risksArray.map((r: any, i: number) => {
+        const excerpt = r.excerpt || r.original_text || "";
+        const idx = contractText.indexOf(excerpt);
         return {
           id: `risk-api-${i}`,
-          level: (["high", "medium", "info"].includes(r.level) ? r.level : "info") as RiskItem["level"],
-          title: r.title || "未知风险",
-          excerpt: r.excerpt || "",
+          level: (["high", "medium", "info"].includes(r.level || r.risk_level) ? (r.level || r.risk_level) : "info") as RiskItem["level"],
+          title: r.title || r.risk_type || "未知风险",
+          excerpt,
           suggestion: r.suggestion || "",
           excerptStart: idx,
-          excerptEnd: idx !== -1 ? idx + (r.excerpt || "").length : -1,
+          excerptEnd: idx !== -1 ? idx + excerpt.length : -1,
         };
       });
 
       stopProgress();
       setRisks(apiRisks);
-      setSummary(parsed.summary || "审查完成");
+      setSummary(summaryText || "审查完成");
       setHasResult(true);
     } catch (err: any) {
       toast({ title: "AI 审计失败", description: err.message, variant: "destructive" });
