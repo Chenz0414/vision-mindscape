@@ -85,11 +85,16 @@ const CandidateBoard = ({
         const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const fnUrl = `https://${projectId}.supabase.co/functions/v1/parse-pdf`;
         
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        
         const res = await fetch(fnUrl, {
           method: "POST",
           headers: { "apikey": anonKey, "x-pdf-api-url": pdfUrl },
           body: formData,
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
         if (!res.ok) {
           const errBody = await res.json().catch(() => null);
           throw new Error(errBody?.error?.message || errBody?.error || `PDF解析失败: ${res.status}`);
