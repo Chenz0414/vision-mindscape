@@ -144,7 +144,7 @@ const CandidateBoard = ({
           if (!res.ok) throw new Error(`远程解析失败: ${res.status}`);
           const data = await res.json();
           if (!data.success) throw new Error(data.error || "远程解析失败");
-          resumeText = data.data || "";
+          resumeText = typeof data.data === "string" ? data.data : (data.data?.text || "");
         } catch (remoteErr: any) {
           stopProgressSimulation(candidateId);
           toast({ title: "PDF 解析失败", description: `本地: ${localErr.message} | 远程: ${remoteErr.message}`, variant: "destructive" });
