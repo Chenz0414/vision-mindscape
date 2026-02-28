@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 const FooterCTA = () => {
   return (
     <section className="relative py-32 overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-px particle-line" />
       <div
         className="absolute inset-0 opacity-20"
         style={{

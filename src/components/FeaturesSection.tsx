@@ -39,6 +39,10 @@ const FeaturesSection = () => {
   return (
     <section className="relative py-32 overflow-hidden">
       <div className="absolute inset-0 dot-bg opacity-30" />
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-[0.05] blur-[100px]"
+        style={{ background: "radial-gradient(circle, hsl(199 89% 55%), transparent)" }}
+      />
       <div className="container relative z-10">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
