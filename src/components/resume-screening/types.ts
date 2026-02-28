@@ -35,4 +35,5 @@ export interface LLMSettings {
   apiKey: string;
   model: string;
   promptTemplate: string;
+  pdfApiUrl: string;
 }
