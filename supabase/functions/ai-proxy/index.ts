@@ -33,11 +33,22 @@ serve(async (req) => {
       }),
     });
 
-    const data = await response.json();
+    const text = await response.text();
 
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: `API error: ${response.status}`, details: data }), {
-        status: response.status,
+      return new Response(JSON.stringify({ error: `API error: ${response.status}`, details: text.substring(0, 500) }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Try parsing as JSON
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return new Response(JSON.stringify({ error: "API returned non-JSON response", details: text.substring(0, 500) }), {
+        status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
