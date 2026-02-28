@@ -5,6 +5,7 @@ export interface RiskItem {
   level: RiskLevel;
   title: string;
   excerpt: string;
+  analysis: string;
   suggestion: string;
   /** start index in the original text for highlight matching */
   excerptStart: number;
