@@ -27,6 +27,7 @@ const SettingsDialog = () => {
   const [open, setOpen] = useState(false);
   const [apiUrl, setApiUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("gpt-4o-mini");
   const [promptTemplate, setPromptTemplate] = useState(DEFAULT_PROMPT);
 
   useEffect(() => {
@@ -35,12 +36,13 @@ const SettingsDialog = () => {
       const s: LLMSettings = JSON.parse(saved);
       setApiUrl(s.apiUrl);
       setApiKey(s.apiKey);
+      setModel(s.model || "gpt-4o-mini");
       setPromptTemplate(s.promptTemplate || DEFAULT_PROMPT);
     }
   }, [open]);
 
   const handleSave = () => {
-    const settings: LLMSettings = { apiUrl, apiKey, promptTemplate };
+    const settings: LLMSettings = { apiUrl, apiKey, model, promptTemplate };
     localStorage.setItem("rs-settings", JSON.stringify(settings));
     toast({ title: "设置已保存" });
     setOpen(false);
@@ -73,6 +75,14 @@ const SettingsDialog = () => {
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="sk-..."
                 type="password"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">模型名称</label>
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="gpt-4o-mini"
               />
             </div>
             <div>

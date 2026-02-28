@@ -33,5 +33,6 @@ export interface Candidate {
 export interface LLMSettings {
   apiUrl: string;
   apiKey: string;
+  model: string;
   promptTemplate: string;
 }
