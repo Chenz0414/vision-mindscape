@@ -32,9 +32,9 @@ const LEVEL_CONFIG: Record<RiskLevel, { label: string; color: string; bgColor: s
 
 // Highlight colors for original text
 const HIGHLIGHT_BG: Record<RiskLevel, string> = {
-  high: "bg-red-500/15 border-l-2 border-red-500/40",
-  medium: "bg-amber-500/15 border-l-2 border-amber-500/40",
-  info: "bg-blue-500/15 border-l-2 border-blue-500/40",
+  high: "bg-red-500/25 border-b-2 border-red-500 text-red-200 rounded-sm",
+  medium: "bg-amber-500/25 border-b-2 border-amber-500 text-amber-200 rounded-sm",
+  info: "bg-blue-500/25 border-b-2 border-blue-500 text-blue-200 rounded-sm",
 };
 
 interface Props {
@@ -99,8 +99,8 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
         <span
           key={h.risk.id}
           data-risk-id={h.risk.id}
-          className={`inline whitespace-pre-wrap px-1 py-0.5 rounded-sm transition-all duration-300 ${HIGHLIGHT_BG[h.risk.level]} ${
-            isActive ? "ring-2 ring-primary/50 scale-[1.01]" : ""
+          className={`inline whitespace-pre-wrap px-1.5 py-1 transition-all duration-300 cursor-pointer ${HIGHLIGHT_BG[h.risk.level]} ${
+            isActive ? "ring-2 ring-primary/60 shadow-lg shadow-primary/20 scale-[1.02]" : "hover:opacity-80"
           }`}
         >
           {contractText.slice(h.start, h.end)}
