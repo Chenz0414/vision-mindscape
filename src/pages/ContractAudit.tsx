@@ -223,6 +223,8 @@ const ContractAudit = () => {
               contractText={contractText}
               risks={risks}
               summary={summary}
+              onUpdateText={setContractText}
+              onUpdateRisks={setRisks}
             />
           </motion.div>
         )}

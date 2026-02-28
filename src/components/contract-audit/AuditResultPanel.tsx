@@ -1,6 +1,6 @@
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, AlertTriangle, Info, Copy, CheckCheck, FileText } from "lucide-react";
+import { Shield, AlertTriangle, Info, Copy, CheckCheck, FileText, Wand2, X, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -30,7 +30,6 @@ const LEVEL_CONFIG: Record<RiskLevel, { label: string; color: string; bgColor: s
   },
 };
 
-// Highlight colors for original text
 const HIGHLIGHT_BG: Record<RiskLevel, string> = {
   high: "bg-red-500/25 border-b-2 border-red-500 text-red-200 rounded-sm",
   medium: "bg-amber-500/25 border-b-2 border-amber-500 text-amber-200 rounded-sm",
@@ -41,10 +40,13 @@ interface Props {
   contractText: string;
   risks: RiskItem[];
   summary: string;
+  onUpdateText: (newText: string) => void;
+  onUpdateRisks: (newRisks: RiskItem[]) => void;
 }
 
-const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
+const AuditResultPanel = ({ contractText, risks, summary, onUpdateText, onUpdateRisks }: Props) => {
   const textRef = useRef<HTMLDivElement>(null);
+  const riskListRef = useRef<HTMLDivElement>(null);
   const [activeRiskId, setActiveRiskId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -55,39 +57,29 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const riskListRef = useRef<HTMLDivElement>(null);
-
   const scrollToHighlight = useCallback((riskId: string) => {
     setActiveRiskId(riskId);
     const el = textRef.current?.querySelector(`[data-risk-id="${riskId}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
   const scrollToRiskCard = useCallback((riskId: string) => {
     setActiveRiskId(riskId);
     const el = riskListRef.current?.querySelector(`[data-card-id="${riskId}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  // Fuzzy find: try exact match first, then normalized match, then substring match
+  // Fuzzy find excerpt in text
   const findExcerptInText = useCallback((text: string, excerpt: string): { start: number; end: number } | null => {
     if (!excerpt || excerpt.length < 4) return null;
-
-    // 1. Exact match
     const exactIdx = text.indexOf(excerpt);
     if (exactIdx !== -1) return { start: exactIdx, end: exactIdx + excerpt.length };
 
-    // 2. Normalize whitespace and try again
     const normalize = (s: string) => s.replace(/\s+/g, "");
     const normText = normalize(text);
     const normExcerpt = normalize(excerpt);
     const normIdx = normText.indexOf(normExcerpt);
     if (normIdx !== -1) {
-      // Map back to original positions
       let origStart = -1, origEnd = -1, normCursor = 0;
       for (let i = 0; i < text.length && origEnd === -1; i++) {
         if (/\s/.test(text[i])) continue;
@@ -98,7 +90,6 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
       if (origStart !== -1 && origEnd !== -1) return { start: origStart, end: origEnd };
     }
 
-    // 3. Try first 10+ chars as substring anchor
     const anchor = excerpt.slice(0, Math.min(15, excerpt.length)).replace(/\s+/g, "");
     if (anchor.length >= 4) {
       const normAnchorIdx = normText.indexOf(anchor);
@@ -110,15 +101,67 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
           normCursor++;
         }
         if (origStart !== -1) {
-          // Estimate end using excerpt length
           const estimatedEnd = Math.min(text.length, origStart + excerpt.length + 20);
           return { start: origStart, end: estimatedEnd };
         }
       }
     }
-
     return null;
   }, []);
+
+  // Apply a single risk's suggestion to the text, replacing the matched excerpt
+  const applyRiskFix = useCallback((text: string, risk: RiskItem): { newText: string; applied: boolean } => {
+    const match = findExcerptInText(text, risk.excerpt);
+    if (!match) return { newText: text, applied: false };
+    const before = text.slice(0, match.start);
+    const after = text.slice(match.end);
+    return { newText: before + risk.suggestion + after, applied: true };
+  }, [findExcerptInText]);
+
+  // Handle "优化此项"
+  const handleOptimizeSingle = useCallback((risk: RiskItem) => {
+    const { newText, applied } = applyRiskFix(contractText, risk);
+    if (!applied) {
+      toast({ title: "无法定位原文", description: "未能在原文中匹配到该条款，请手动修改", variant: "destructive" });
+      return;
+    }
+    onUpdateText(newText);
+    onUpdateRisks(risks.filter(r => r.id !== risk.id));
+    toast({ title: "已优化", description: `"${risk.title}" 已替换到原文中` });
+  }, [contractText, risks, applyRiskFix, onUpdateText, onUpdateRisks]);
+
+  // Handle "本次忽略"
+  const handleIgnore = useCallback((riskId: string) => {
+    onUpdateRisks(risks.filter(r => r.id !== riskId));
+    toast({ title: "已忽略该项" });
+  }, [risks, onUpdateRisks]);
+
+  // Handle "一键优化" - apply all remaining risks
+  const handleOptimizeAll = useCallback(() => {
+    let currentText = contractText;
+    let appliedCount = 0;
+    // Sort by position descending so replacements don't shift indices
+    const sorted = [...risks]
+      .map(r => ({ risk: r, match: findExcerptInText(currentText, r.excerpt) }))
+      .filter(item => item.match !== null)
+      .sort((a, b) => b.match!.start - a.match!.start);
+
+    for (const { risk, match } of sorted) {
+      if (!match) continue;
+      const before = currentText.slice(0, match.start);
+      const after = currentText.slice(match.end);
+      currentText = before + risk.suggestion + after;
+      appliedCount++;
+    }
+
+    if (appliedCount === 0) {
+      toast({ title: "无法定位", description: "未能匹配到任何原文条款", variant: "destructive" });
+      return;
+    }
+    onUpdateText(currentText);
+    onUpdateRisks([]);
+    toast({ title: "一键优化完成", description: `已将 ${appliedCount} 项建议应用到原文` });
+  }, [contractText, risks, findExcerptInText, onUpdateText, onUpdateRisks]);
 
   // Build highlighted text segments
   const renderHighlightedText = () => {
@@ -126,23 +169,16 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
       return <p className="whitespace-pre-wrap text-sm leading-7 text-foreground/80">{contractText}</p>;
     }
 
-    // Find excerpts in the text and build segments
     const highlights: { start: number; end: number; risk: RiskItem }[] = [];
     for (const risk of risks) {
       const match = findExcerptInText(contractText, risk.excerpt);
-      if (match) {
-        highlights.push({ start: match.start, end: match.end, risk });
-      }
+      if (match) highlights.push({ start: match.start, end: match.end, risk });
     }
-    // Remove overlapping highlights (keep earlier ones)
     highlights.sort((a, b) => a.start - b.start);
     const filtered: typeof highlights = [];
     let lastEnd = 0;
     for (const h of highlights) {
-      if (h.start >= lastEnd) {
-        filtered.push(h);
-        lastEnd = h.end;
-      }
+      if (h.start >= lastEnd) { filtered.push(h); lastEnd = h.end; }
     }
 
     if (filtered.length === 0) {
@@ -151,25 +187,19 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
 
     const segments: React.ReactNode[] = [];
     let cursor = 0;
-
     for (const h of filtered) {
       if (h.start > cursor) {
-        segments.push(
-          <span key={`t-${cursor}`} className="whitespace-pre-wrap">
-            {contractText.slice(cursor, h.start)}
-          </span>
-        );
+        segments.push(<span key={`t-${cursor}`} className="whitespace-pre-wrap">{contractText.slice(cursor, h.start)}</span>);
       }
-      const risk = h.risk;
-      const config = LEVEL_CONFIG[risk.level];
-      const isActive = activeRiskId === risk.id;
+      const config = LEVEL_CONFIG[h.risk.level];
+      const isActive = activeRiskId === h.risk.id;
       segments.push(
         <span
-          key={risk.id}
-          data-risk-id={risk.id}
-          title={`${config.label}：${risk.title}`}
-          onClick={() => scrollToRiskCard(risk.id)}
-          className={`inline whitespace-pre-wrap px-1.5 py-1 transition-all duration-300 cursor-pointer ${HIGHLIGHT_BG[risk.level]} ${
+          key={h.risk.id}
+          data-risk-id={h.risk.id}
+          title={`${config.label}：${h.risk.title}`}
+          onClick={() => scrollToRiskCard(h.risk.id)}
+          className={`inline whitespace-pre-wrap px-1.5 py-1 transition-all duration-300 cursor-pointer ${HIGHLIGHT_BG[h.risk.level]} ${
             isActive ? "ring-2 ring-primary/60 shadow-lg shadow-primary/20 scale-[1.02]" : "hover:opacity-80"
           }`}
         >
@@ -178,15 +208,9 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
       );
       cursor = h.end;
     }
-
     if (cursor < contractText.length) {
-      segments.push(
-        <span key={`t-${cursor}`} className="whitespace-pre-wrap">
-          {contractText.slice(cursor)}
-        </span>
-      );
+      segments.push(<span key={`t-${cursor}`} className="whitespace-pre-wrap">{contractText.slice(cursor)}</span>);
     }
-
     return <div className="text-sm leading-7 text-foreground/80">{segments}</div>;
   };
 
@@ -221,10 +245,23 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
             {risks.length} 项
           </Badge>
         </div>
+
+        {/* 一键优化 button */}
+        {risks.length > 0 && (
+          <Button
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); handleOptimizeAll(); }}
+            className="mb-3 gap-2 w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-medium shadow-md"
+          >
+            <Sparkles className="w-4 h-4" />
+            一键优化全部（{risks.length} 项）
+          </Button>
+        )}
+
         <div
           ref={riskListRef}
           className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0"
-          style={{ maxHeight: "calc(100vh - 14rem)" }}
+          style={{ maxHeight: "calc(100vh - 17rem)" }}
         >
           <AnimatePresence>
             {risks.map((risk, i) => {
@@ -236,7 +273,8 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
                   data-card-id={risk.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
+                  exit={{ opacity: 0, x: -20, height: 0, marginBottom: 0 }}
+                  transition={{ delay: i * 0.05 }}
                   onClick={() => scrollToHighlight(risk.id)}
                   className={`group rounded-xl border cursor-pointer transition-all duration-300 overflow-hidden ${config.borderColor} ${config.bgColor} ${
                     isActive ? "ring-2 ring-primary/40 shadow-lg" : "hover:shadow-md"
@@ -272,12 +310,36 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
                     </p>
                   </div>
 
-                  {/* Copy button */}
-                  <div className="px-4 pb-3">
+                  {/* Action buttons */}
+                  <div className="px-4 pb-3 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-[11px] gap-1.5 flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOptimizeSingle(risk);
+                      }}
+                    >
+                      <Wand2 className="w-3 h-3" />
+                      优化此项
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIgnore(risk.id);
+                      }}
+                    >
+                      <X className="w-3 h-3" />
+                      本次忽略
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground ml-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCopy(risk.suggestion, risk.id);
@@ -286,7 +348,7 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
                       {copiedId === risk.id ? (
                         <><CheckCheck className="w-3 h-3 text-primary" /> 已复制</>
                       ) : (
-                        <><Copy className="w-3 h-3" /> 一键复制建议</>
+                        <><Copy className="w-3 h-3" /> 复制</>
                       )}
                     </Button>
                   </div>
