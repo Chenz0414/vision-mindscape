@@ -1,12 +1,11 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
-import { Upload, FileText, Loader2, Brain, CheckCircle2, AlertCircle, Briefcase } from "lucide-react";
+import { Upload, FileText, Loader2, Brain, CheckCircle2, AlertCircle, Briefcase, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { parsePdfLocally } from "./pdfLocalParser";
-import type { Job, Candidate, CandidateStatus } from "./types";
-import type { LLMSettings } from "./types";
+import type { Job, Candidate, CandidateStatus, LLMSettings } from "./types";
 import ScoreRing from "./ScoreRing";
 
 const STATUS_LABELS: Record<CandidateStatus, { label: string; icon: React.ReactNode }> = {
@@ -74,42 +73,38 @@ const CandidateBoard = ({
       updateCandidate(candidateId, { status: "extracting" });
       let resumeText = "";
       
-      // Try remote API first, fallback to local PDF.js
+      // Try local PDF.js first (fast, no network dependency)
+      // Falls back to remote API only if local fails
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        
-        const settings = getSettings();
-        const pdfUrl = settings?.pdfApiUrl || "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const fnUrl = `https://${projectId}.supabase.co/functions/v1/parse-pdf`;
-        
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
-        
-        const res = await fetch(fnUrl, {
-          method: "POST",
-          headers: { "apikey": anonKey, "x-pdf-api-url": pdfUrl },
-          body: formData,
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (!res.ok) {
-          const errBody = await res.json().catch(() => null);
-          throw new Error(errBody?.error?.message || errBody?.error || `PDF解析失败: ${res.status}`);
-        }
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error?.message || data.error || "解析返回失败");
-        resumeText = data.data || "";
-      } catch (remoteErr: any) {
-        console.warn("远程解析失败，降级到本地 PDF.js:", remoteErr.message);
-        toast({ title: "远程解析不可用，已切换本地解析", description: remoteErr.message });
+        resumeText = await parsePdfLocally(file);
+      } catch (localErr: any) {
+        console.warn("本地解析失败，尝试远程 API:", localErr.message);
+        // Try remote as fallback
         try {
-          resumeText = await parsePdfLocally(file);
-        } catch (localErr: any) {
-          toast({ title: "PDF 解析失败", description: localErr.message, variant: "destructive" });
-          updateCandidate(candidateId, { status: "error", error: localErr.message });
+          const formData = new FormData();
+          formData.append("file", file);
+          const settings = getSettings();
+          const pdfUrl = settings?.pdfApiUrl || "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+          const fnUrl = `https://${projectId}.supabase.co/functions/v1/parse-pdf`;
+          
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          const res = await fetch(fnUrl, {
+            method: "POST",
+            headers: { "apikey": anonKey, "x-pdf-api-url": pdfUrl },
+            body: formData,
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          if (!res.ok) throw new Error(`远程解析失败: ${res.status}`);
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error || "远程解析失败");
+          resumeText = data.data || "";
+        } catch (remoteErr: any) {
+          toast({ title: "PDF 解析失败", description: `本地: ${localErr.message} | 远程: ${remoteErr.message}`, variant: "destructive" });
+          updateCandidate(candidateId, { status: "error", error: "解析失败" });
           return;
         }
       }
@@ -250,7 +245,7 @@ const CandidateBoard = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => candidate.status === "done" && onSelectCandidate(candidate.id)}
-            className={`glass-card rounded-xl p-4 cursor-pointer transition-all duration-300 hover:border-primary/30 ${
+            className={`group glass-card rounded-xl p-4 cursor-pointer transition-all duration-300 hover:border-primary/30 ${
               selectedCandidateId === candidate.id ? "border-primary/50 bg-primary/5" : ""
             }`}
           >
@@ -297,6 +292,18 @@ const CandidateBoard = ({
                   {candidate.score}分
                 </span>
               )}
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAllCandidates((prev) => prev.filter((c) => c.id !== candidate.id));
+                  if (selectedCandidateId === candidate.id) onSelectCandidate(null);
+                }}
+                className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0"
+                title="删除"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           </motion.div>
         ))}
