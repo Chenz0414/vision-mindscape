@@ -115,16 +115,45 @@ const ContractAudit = () => {
       
       if (risksArray.length === 0) throw new Error("AI 未返回有效 JSON");
 
+      // Post-process: split analysis from suggestion if AI mixes them
+      const splitSuggestion = (raw: string): { analysis: string; suggestion: string } => {
+        // Common patterns where actual clause text starts
+        const markers = [
+          /建议修改为[：:]\s*/,
+          /修改后[的]?条款[：:]\s*/,
+          /修改后[：:]\s*/,
+          /优化后[的]?条款[：:]\s*/,
+          /优化后[：:]\s*/,
+          /替换为[：:]\s*/,
+          /改为[：:]\s*/,
+          /调整为[：:]\s*/,
+        ];
+        for (const marker of markers) {
+          const match = raw.match(marker);
+          if (match && match.index !== undefined) {
+            const analysisPart = raw.slice(0, match.index).trim();
+            const suggestionPart = raw.slice(match.index + match[0].length).trim();
+            if (suggestionPart.length > 0) {
+              return { analysis: analysisPart, suggestion: suggestionPart };
+            }
+          }
+        }
+        return { analysis: "", suggestion: raw };
+      };
+
       const apiRisks: RiskItem[] = risksArray.map((r: any, i: number) => {
         const excerpt = r.excerpt || r.original_text || "";
         const idx = contractText.indexOf(excerpt);
+        const rawSuggestion = r.suggestion || "";
+        const rawAnalysis = r.analysis || "";
+        const { analysis: extractedAnalysis, suggestion: cleanSuggestion } = splitSuggestion(rawSuggestion);
         return {
           id: `risk-api-${i}`,
           level: (["high", "medium", "info"].includes(r.level || r.risk_level) ? (r.level || r.risk_level) : "info") as RiskItem["level"],
           title: r.title || r.risk_type || "未知风险",
           excerpt,
-          analysis: r.analysis || "",
-          suggestion: r.suggestion || "",
+          analysis: rawAnalysis || extractedAnalysis,
+          suggestion: cleanSuggestion,
           excerptStart: idx,
           excerptEnd: idx !== -1 ? idx + excerpt.length : -1,
         };
