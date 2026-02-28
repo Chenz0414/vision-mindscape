@@ -8,6 +8,7 @@ import { parsePdfLocally } from "./pdfLocalParser";
 import type { Job, Candidate, CandidateStatus, LLMSettings } from "./types";
 import ScoreRing from "./ScoreRing";
 import { Progress } from "@/components/ui/progress";
+import InterviewQuestionsDialog from "./InterviewQuestionsDialog";
 
 const STATUS_LABELS: Record<CandidateStatus, { label: string; icon: React.ReactNode }> = {
   uploading: { label: "上传中…", icon: <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> },
@@ -340,6 +341,10 @@ const CandidateBoard = ({
                 <span className={`text-xs font-semibold ${candidate.score >= 80 ? "text-emerald-400" : candidate.score >= 60 ? "text-primary" : "text-muted-foreground"}`}>
                   {candidate.score}分
                 </span>
+              )}
+
+              {candidate.status === "done" && activeJob && (
+                <InterviewQuestionsDialog candidate={candidate} jobDescription={activeJob.description} />
               )}
 
               <button
