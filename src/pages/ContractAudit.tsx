@@ -65,13 +65,16 @@ const ContractAudit = () => {
     const prompt = (settings.promptTemplate || DEFAULT_PROMPT).replace("{contract}", contractText);
 
     try {
-      const res = await fetch(settings.apiUrl, {
+      const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`;
+      const res = await fetch(proxyUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${settings.apiKey}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
+          apiUrl: settings.apiUrl,
+          apiKey: settings.apiKey,
           model: settings.model || "glm-4.7",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
