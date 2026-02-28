@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Check, Plus, Sparkles, Users, Image, FileCheck, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const capabilities = [
   "多模态能力：文字、图片、表格一网打尽",
@@ -16,6 +17,8 @@ const tools = [
 ];
 
 const CustomizationSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative py-32 overflow-hidden">
       {/* Local ambient glow */}
@@ -100,6 +103,7 @@ const CustomizationSection = () => {
                         ? "bg-primary/10 border border-primary/30"
                         : "hover:bg-secondary border border-transparent"
                     }`}
+                    onClick={() => tool.active && navigate("/resume-screening")}
                   >
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${
