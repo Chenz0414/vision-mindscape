@@ -18,12 +18,10 @@ const tools = [
 const CustomizationSection = () => {
   return (
     <section className="relative py-32 overflow-hidden">
-      {/* Gradient divider */}
-      <div className="absolute top-0 left-0 right-0 h-px particle-line" />
-      
+      {/* Local ambient glow */}
       <div
-        className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]"
-        style={{ background: "radial-gradient(circle, hsl(199 89% 48% / 0.3), transparent)" }}
+        className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.06] blur-[120px]"
+        style={{ background: "radial-gradient(circle, hsl(199 89% 48%), transparent)" }}
       />
 
       <div className="container relative z-10">

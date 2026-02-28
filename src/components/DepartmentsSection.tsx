@@ -28,8 +28,11 @@ const departments = [
 const DepartmentsSection = () => {
   return (
     <section className="relative py-32 overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-px particle-line" />
       <div className="absolute inset-0 grid-bg opacity-20" />
+      <div
+        className="absolute bottom-0 left-1/4 w-[600px] h-[400px] rounded-full opacity-[0.05] blur-[120px]"
+        style={{ background: "radial-gradient(circle, hsl(217 91% 60%), transparent)" }}
+      />
 
       <div className="container relative z-10">
         <motion.h2
