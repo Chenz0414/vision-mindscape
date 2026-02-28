@@ -3,11 +3,10 @@ import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { Upload, FileText, Loader2, Brain, CheckCircle2, AlertCircle, Briefcase } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { Job, Candidate, CandidateStatus } from "./types";
 import type { LLMSettings } from "./types";
 import ScoreRing from "./ScoreRing";
-
-const PDF_API = "https://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
 
 const STATUS_LABELS: Record<CandidateStatus, { label: string; icon: React.ReactNode }> = {
   uploading: { label: "上传中…", icon: <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> },
@@ -76,13 +75,22 @@ const CandidateBoard = ({
       try {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await fetch(PDF_API, { method: "POST", body: formData });
+        
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const fnUrl = `https://${projectId}.supabase.co/functions/v1/parse-pdf`;
+        
+        const res = await fetch(fnUrl, {
+          method: "POST",
+          headers: { "apikey": anonKey },
+          body: formData,
+        });
         if (!res.ok) {
           const errBody = await res.json().catch(() => null);
-          throw new Error(errBody?.error?.message || `PDF解析失败: ${res.status}`);
+          throw new Error(errBody?.error?.message || errBody?.error || `PDF解析失败: ${res.status}`);
         }
         const data = await res.json();
-        if (!data.success) throw new Error(data.error?.message || "解析返回失败");
+        if (!data.success) throw new Error(data.error?.message || data.error || "解析返回失败");
         resumeText = data.data || "";
       } catch (err: any) {
         toast({ title: "PDF 解析错误", description: err.message, variant: "destructive" });
