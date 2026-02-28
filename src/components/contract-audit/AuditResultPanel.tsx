@@ -55,9 +55,19 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const riskListRef = useRef<HTMLDivElement>(null);
+
   const scrollToHighlight = useCallback((riskId: string) => {
     setActiveRiskId(riskId);
     const el = textRef.current?.querySelector(`[data-risk-id="${riskId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
+  const scrollToRiskCard = useCallback((riskId: string) => {
+    setActiveRiskId(riskId);
+    const el = riskListRef.current?.querySelector(`[data-card-id="${riskId}"]`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -94,12 +104,16 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
           </span>
         );
       }
-      const isActive = activeRiskId === h.risk.id;
+      const risk = h.risk;
+      const config = LEVEL_CONFIG[risk.level];
+      const isActive = activeRiskId === risk.id;
       segments.push(
         <span
-          key={h.risk.id}
-          data-risk-id={h.risk.id}
-          className={`inline whitespace-pre-wrap px-1.5 py-1 transition-all duration-300 cursor-pointer ${HIGHLIGHT_BG[h.risk.level]} ${
+          key={risk.id}
+          data-risk-id={risk.id}
+          title={`${config.label}：${risk.title}`}
+          onClick={() => scrollToRiskCard(risk.id)}
+          className={`inline whitespace-pre-wrap px-1.5 py-1 transition-all duration-300 cursor-pointer ${HIGHLIGHT_BG[risk.level]} ${
             isActive ? "ring-2 ring-primary/60 shadow-lg shadow-primary/20 scale-[1.02]" : "hover:opacity-80"
           }`}
         >
@@ -152,6 +166,7 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
           </Badge>
         </div>
         <div
+          ref={riskListRef}
           className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0"
           style={{ maxHeight: "calc(100vh - 14rem)" }}
         >
@@ -162,6 +177,7 @@ const AuditResultPanel = ({ contractText, risks, summary }: Props) => {
               return (
                 <motion.div
                   key={risk.id}
+                  data-card-id={risk.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
