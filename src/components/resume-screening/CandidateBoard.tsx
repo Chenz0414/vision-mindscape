@@ -343,21 +343,22 @@ const CandidateBoard = ({
                 </span>
               )}
 
-              {candidate.status === "done" && activeJob && (
-                <InterviewQuestionsDialog candidate={candidate} jobDescription={activeJob.description} />
-              )}
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAllCandidates((prev) => prev.filter((c) => c.id !== candidate.id));
-                  if (selectedCandidateId === candidate.id) onSelectCandidate(null);
-                }}
-                className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0"
-                title="删除"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {candidate.status === "done" && activeJob && (
+                  <InterviewQuestionsDialog candidate={candidate} jobDescription={activeJob.description} />
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAllCandidates((prev) => prev.filter((c) => c.id !== candidate.id));
+                    if (selectedCandidateId === candidate.id) onSelectCandidate(null);
+                  }}
+                  className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+                  title="删除"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}
