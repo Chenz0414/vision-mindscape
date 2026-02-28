@@ -295,17 +295,28 @@ const AuditResultPanel = ({ contractText, risks, summary, onUpdateText, onUpdate
                     </div>
                   </div>
 
-                  {/* Excerpt */}
-                  <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-background/40 border border-border/30">
+                  {/* Excerpt (原文) */}
+                  <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-background/40 border border-border/30">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1">📄 原文</p>
                     <p className="text-xs text-muted-foreground leading-relaxed italic">
                       "{risk.excerpt}"
                     </p>
                   </div>
 
-                  {/* Suggestion */}
-                  <div className="mx-4 mb-3">
-                    <p className="text-xs font-medium text-foreground/70 mb-1">💡 修改建议</p>
-                    <p className="text-xs text-foreground/60 leading-relaxed">
+                  {/* Analysis (分析) */}
+                  {risk.analysis && (
+                    <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-muted/30">
+                      <p className="text-[10px] font-medium text-muted-foreground mb-1">🔍 分析</p>
+                      <p className="text-xs text-foreground/60 leading-relaxed">
+                        {risk.analysis}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Suggestion (优化后) */}
+                  <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+                    <p className="text-[10px] font-medium text-primary/70 mb-1">✨ 优化后</p>
+                    <p className="text-xs text-foreground/70 leading-relaxed">
                       {risk.suggestion}
                     </p>
                   </div>

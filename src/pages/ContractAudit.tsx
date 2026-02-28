@@ -123,6 +123,7 @@ const ContractAudit = () => {
           level: (["high", "medium", "info"].includes(r.level || r.risk_level) ? (r.level || r.risk_level) : "info") as RiskItem["level"],
           title: r.title || r.risk_type || "未知风险",
           excerpt,
+          analysis: r.analysis || "",
           suggestion: r.suggestion || "",
           excerptStart: idx,
           excerptEnd: idx !== -1 ? idx + excerpt.length : -1,
