@@ -9,11 +9,11 @@ const capabilities = [
 ];
 
 const tools = [
-  { icon: Users, label: "HR简历速筛", active: true },
-  { icon: Sparkles, label: "全平台广告生成", active: false },
-  { icon: Image, label: "电商主图直出", active: false },
-  { icon: FileCheck, label: "合同法务排雷", active: false },
-  { icon: BarChart3, label: "运营数据周报", active: false },
+  { icon: Users, label: "HR简历速筛", active: true, route: "/resume-screening" },
+  { icon: Sparkles, label: "全平台广告生成", active: false, route: "" },
+  { icon: Image, label: "电商主图直出", active: false, route: "" },
+  { icon: FileCheck, label: "合同法务排雷", active: true, route: "/contract-audit" },
+  { icon: BarChart3, label: "运营数据周报", active: false, route: "" },
 ];
 
 const CustomizationSection = () => {
@@ -103,7 +103,7 @@ const CustomizationSection = () => {
                         ? "bg-primary/10 border border-primary/30"
                         : "hover:bg-secondary border border-transparent"
                     }`}
-                    onClick={() => tool.active && navigate("/resume-screening")}
+                    onClick={() => tool.active && navigate(tool.route)}
                   >
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${
