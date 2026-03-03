@@ -36,9 +36,18 @@ const DEFAULT_SETTINGS: LLMSettings = {
   pdfApiUrl: "",
 };
 
+const fixApiUrl = (url: string): string => {
+  if (url && !url.endsWith("/chat/completions")) {
+    return url.replace(/\/+$/, "") + "/chat/completions";
+  }
+  return url;
+};
+
 const getSettings = (): LLMSettings => {
   const s = localStorage.getItem("rs-settings");
-  return s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
+  const settings = s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
+  settings.apiUrl = fixApiUrl(settings.apiUrl);
+  return settings;
 };
 
 interface Props {
