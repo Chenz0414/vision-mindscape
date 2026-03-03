@@ -49,9 +49,9 @@ const ContractAudit = () => {
   const handleStartAudit = async () => {
     const settingsRaw = localStorage.getItem(STORAGE_KEY);
     const defaults: ContractSettings = {
-      apiUrl: "https://yunwu.ai/v1/chat/completions",
-      apiKey: "sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg",
-      model: "glm-4.7",
+      apiUrl: "",
+      apiKey: "",
+      model: "",
       promptTemplate: DEFAULT_PROMPT,
     };
     const settings: ContractSettings = settingsRaw ? { ...defaults, ...JSON.parse(settingsRaw) } : defaults;
