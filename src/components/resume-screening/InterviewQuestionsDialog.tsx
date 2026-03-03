@@ -29,9 +29,9 @@ const INTERVIEW_PROMPT = `你是一位资深HR面试官。请根据以下岗位�
 - 风险：{risks}`;
 
 const DEFAULT_SETTINGS: LLMSettings = {
-  apiUrl: "https://yunwu.ai/v1/chat/completions",
-  apiKey: "sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg",
-  model: "glm-4.7",
+  apiUrl: "",
+  apiKey: "",
+  model: "",
   promptTemplate: "",
   pdfApiUrl: "",
 };

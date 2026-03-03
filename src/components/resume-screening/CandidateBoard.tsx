@@ -29,11 +29,11 @@ interface Props {
 }
 
 const DEFAULT_SETTINGS: LLMSettings = {
-  apiUrl: "https://yunwu.ai/v1/chat/completions",
-  apiKey: "sk-EuxW4Jz0h2G8NPKNOznzOBu1ZPJ7NXodjLiszMYnqF14iftg",
-  model: "glm-4.7",
+  apiUrl: "",
+  apiKey: "",
+  model: "",
   promptTemplate: "",
-  pdfApiUrl: "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload",
+  pdfApiUrl: "",
 };
 
 const fixApiUrl = (url: string): string => {
