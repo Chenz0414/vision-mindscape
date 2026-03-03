@@ -1,7 +1,7 @@
 import * as pdfjsLib from "pdfjs-dist";
 
-// Use CDN worker to avoid bundling issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
+// Match worker version to installed pdfjs-dist package version
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
 
 /**
  * Parse PDF file locally using PDF.js as fallback
