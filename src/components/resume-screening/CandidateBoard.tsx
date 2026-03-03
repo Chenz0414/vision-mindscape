@@ -36,9 +36,18 @@ const DEFAULT_SETTINGS: LLMSettings = {
   pdfApiUrl: "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload",
 };
 
+const fixApiUrl = (url: string): string => {
+  if (url && !url.endsWith("/chat/completions")) {
+    return url.replace(/\/+$/, "") + "/chat/completions";
+  }
+  return url;
+};
+
 const getSettings = (): LLMSettings => {
   const s = localStorage.getItem("rs-settings");
-  return s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
+  const settings = s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
+  settings.apiUrl = fixApiUrl(settings.apiUrl);
+  return settings;
 };
 
 const DEFAULT_PROMPT = `你是一位专业的HR助手。请对比以下岗位描述和候选人简历，返回严格的JSON格式（不要markdown包裹）：
