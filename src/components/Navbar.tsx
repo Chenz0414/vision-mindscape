@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import ContactModal from "@/components/ContactModal";
+import ritaLogo from "@/assets/rita-logo.webp";
+import ritaText from "@/assets/rita-text.webp";
 
-const navItems = ["产品功能", "定制化中台", "行业案例", "安全合规"];
+const navItems = [
+  { label: "产品功能", target: "features" },
+  { label: "定制化中台", target: "customization" },
+  { label: "行业案例", target: "departments" },
+  { label: "安全合规", target: "footer" },
+];
 
 const Navbar = () => {
   const [modalOpen, setModalOpen] = useState(false);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <>
@@ -21,20 +33,21 @@ const Navbar = () => {
       }}
     >
       <div className="container flex h-16 items-center justify-between">
-        <div className="font-display text-xl font-bold text-gradient-primary">
-          Rita AI
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+          <img src={ritaLogo} alt="Rita Logo" className="h-8 w-8" />
+          <img src={ritaText} alt="Rita" className="h-5" />
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
-            <a
-              key={item}
-              href="#"
+            <button
+              key={item.label}
+              onClick={() => scrollTo(item.target)}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 relative group"
             >
-              {item}
+              {item.label}
               <span className="absolute -bottom-1 left-0 w-0 h-px bg-primary transition-all duration-300 group-hover:w-full" />
-            </a>
+            </button>
           ))}
         </nav>
 

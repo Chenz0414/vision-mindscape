@@ -37,7 +37,7 @@ const itemVariants = {
 
 const FeaturesSection = () => {
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section id="features" className="relative py-32 overflow-hidden">
       <div className="absolute inset-0 dot-bg opacity-30" />
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-[0.05] blur-[100px]"

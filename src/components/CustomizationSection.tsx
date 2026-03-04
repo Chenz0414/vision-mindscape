@@ -20,7 +20,7 @@ const CustomizationSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section id="customization" className="relative py-32 overflow-hidden">
       {/* Local ambient glow */}
       <div
         className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.06] blur-[120px]"
