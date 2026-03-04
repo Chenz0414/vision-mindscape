@@ -45,13 +45,6 @@ const HeroSection = () => {
               >
                 获取提效方案
               </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-8 py-3.5 rounded-lg border border-border text-foreground font-medium text-base hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
-              >
-                获取提效方案
-              </motion.button>
             </div>
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
