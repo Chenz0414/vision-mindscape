@@ -68,11 +68,23 @@ const ContactModal = ({ open, onClose }: ContactModalProps) => {
   const handleSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
-    const payload = { name: form.name.trim(), contact: form.contact.trim(), company: form.company.trim(), teamSize: form.teamSize, requirement: form.requirement };
-    console.log("===== 【数据契约】这是准备发给服务端的 JSON 格式 =====\n", JSON.stringify(payload, null, 2));
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    setSuccess(true);
+    try {
+      const payload = { name: form.name.trim(), contact: form.contact.trim(), company: form.company.trim(), teamSize: form.teamSize, requirement: form.requirement };
+      const { data, error } = await supabase.functions.invoke("submit-requirement", { body: payload });
+
+      if (error) throw error;
+      if (data?.code !== 0) {
+        toast.error(data?.message || "提交失败，请稍后重试");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setSuccess(true);
+    } catch (e) {
+      console.error("Submit error:", e);
+      toast.error("网络异常，请稍后重试");
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
