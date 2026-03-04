@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    overflow-y: scroll;
+  }
+
   :root {
     --background: 220 18% 6%;
     --foreground: 210 40% 93%;
