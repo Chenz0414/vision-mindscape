@@ -34,7 +34,7 @@ const HeroSection = () => {
               深度嵌入日常办公流，提供开箱即用的 AI 工具集。
             </p>
             <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-              让 10 人的团队，发挥 30 人的产能。
+              让整个团队成倍提升产能。
             </p>
 
             <div className="flex flex-wrap gap-4 mb-6">
@@ -43,7 +43,7 @@ const HeroSection = () => {
                 whileTap={{ scale: 0.98 }}
                 className="px-8 py-3.5 rounded-lg bg-primary text-primary-foreground font-semibold text-base transition-all duration-300 hover:shadow-[0_0_30px_-5px_hsl(199_89%_48%_/_0.5)]"
               >
-                免费接入试用
+                获取提效方案
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.03 }}

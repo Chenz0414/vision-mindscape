@@ -33,11 +33,8 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-4">
-          <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            登录
-          </button>
           <button className="text-sm px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:shadow-[0_0_20px_-5px_hsl(199_89%_48%_/_0.5)] transition-all duration-300">
-            预约演示
+            商务合作
           </button>
         </div>
       </div>
