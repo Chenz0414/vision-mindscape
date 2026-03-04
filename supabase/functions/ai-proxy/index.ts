@@ -5,7 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const API_URL = "https://api.siliconflow.cn/v1/chat/completions";
+const MODEL = "deepseek-ai/DeepSeek-V3.2";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("SILICONFLOW_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
         status: 500,
@@ -21,16 +22,16 @@ serve(async (req) => {
       });
     }
 
-    const { messages, temperature, model } = await req.json();
+    const { messages, temperature } = await req.json();
 
-    const response = await fetch(GATEWAY_URL, {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: model || "google/gemini-2.5-flash",
+        model: MODEL,
         messages,
         temperature: temperature ?? 0.3,
       }),
@@ -39,6 +40,7 @@ serve(async (req) => {
     const text = await response.text();
 
     if (!response.ok) {
+      console.error("SiliconFlow error:", response.status, text.substring(0, 500));
       return new Response(JSON.stringify({ error: `AI error: ${response.status}`, details: text.substring(0, 500) }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
