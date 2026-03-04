@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
+import ContactModal from "@/components/ContactModal";
 
 const navItems = ["产品功能", "定制化中台", "行业案例", "安全合规"];
 
 const Navbar = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
+    <>
+    <ContactModal open={modalOpen} onClose={() => setModalOpen(false)} />
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
@@ -33,12 +39,16 @@ const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-4">
-          <button className="text-sm px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:shadow-[0_0_20px_-5px_hsl(199_89%_48%_/_0.5)] transition-all duration-300">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="text-sm px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:shadow-[0_0_20px_-5px_hsl(199_89%_48%_/_0.5)] transition-all duration-300"
+          >
             商务合作
           </button>
         </div>
       </div>
     </motion.header>
+    </>
   );
 };
 
