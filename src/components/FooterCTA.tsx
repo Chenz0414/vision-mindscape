@@ -31,7 +31,7 @@ const FooterCTA = () => {
             whileTap={{ scale: 0.97 }}
             className="inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-primary text-primary-foreground font-semibold text-lg transition-all duration-300 hover:shadow-[0_0_40px_-5px_hsl(199_89%_48%_/_0.5)]"
           >
-            免费接入试用
+            获取提效方案
             <ArrowRight className="w-5 h-5" />
           </motion.button>
         </motion.div>
