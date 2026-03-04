@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import ContactModal from "@/components/ContactModal";
-import ritaLogo from "@/assets/rita-logo.webp";
-import ritaText from "@/assets/rita-text.webp";
+import ritaCombinedLogo from "@/assets/rita-combined-logo.png";
 
 const navItems = [
   { label: "产品功能", target: "features" },
@@ -34,8 +33,7 @@ const Navbar = () => {
     >
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <img src={ritaLogo} alt="Rita Logo" className="h-8 w-8" />
-          <img src={ritaText} alt="Rita" className="h-5" />
+          <img src={ritaCombinedLogo} alt="Rita AI" className="h-8" />
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
