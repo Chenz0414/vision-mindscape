@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { MessageSquare, Loader2, Copy, CheckCheck, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import type { Candidate, LLMSettings } from "./types";
+import type { Candidate } from "./types";
 import ReactMarkdown from "react-markdown";
 
 const INTERVIEW_PROMPT = `你是一位资深HR面试官。请根据以下岗位描述和候选人简历，生成5道有针对性的面试题。
@@ -28,34 +28,11 @@ const INTERVIEW_PROMPT = `你是一位资深HR面试官。请根据以下岗位�
 - 优势：{strengths}
 - 风险：{risks}`;
 
-const DEFAULT_SETTINGS: LLMSettings = {
-  apiUrl: "",
-  apiKey: "",
-  model: "",
-  promptTemplate: "",
-  pdfApiUrl: "",
-};
-
-const fixApiUrl = (url: string): string => {
-  if (url && !url.endsWith("/chat/completions")) {
-    return url.replace(/\/+$/, "") + "/chat/completions";
-  }
-  return url;
-};
-
-const getSettings = (): LLMSettings => {
-  const s = localStorage.getItem("rs-settings");
-  const settings = s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
-  settings.apiUrl = fixApiUrl(settings.apiUrl);
-  return settings;
-};
-
 interface Props {
   candidate: Candidate;
   jobDescription: string;
 }
 
-/** Split markdown content into individual question blocks by ## headings */
 const splitQuestions = (md: string): string[] => {
   const parts = md.split(/(?=^## )/m).filter((s) => s.trim());
   return parts.length > 0 ? parts : [md];
@@ -88,8 +65,6 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
   useEffect(() => () => { if (progressRef.current) clearInterval(progressRef.current); }, []);
 
   const generate = async () => {
-    const settings = getSettings();
-
     setLoading(true);
     setContent("");
     startProgress();
@@ -111,9 +86,6 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
           "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
-          apiUrl: settings.apiUrl,
-          apiKey: settings.apiKey,
-          model: settings.model || "glm-4.7",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
         }),
@@ -158,7 +130,6 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
         className="max-w-3xl max-h-[88vh] flex flex-col overflow-hidden glass-card border-border/50 p-0"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border/50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -185,7 +156,6 @@ const InterviewQuestionsDialog = ({ candidate, jobDescription }: Props) => {
           )}
         </div>
 
-        {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-5">

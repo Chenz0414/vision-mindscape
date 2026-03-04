@@ -1,11 +1,10 @@
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import { Upload, FileText, Loader2, Brain, CheckCircle2, AlertCircle, Briefcase, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { parsePdfLocally } from "./pdfLocalParser";
-import type { Job, Candidate, CandidateStatus, LLMSettings } from "./types";
+import type { Job, Candidate, CandidateStatus } from "./types";
 import ScoreRing from "./ScoreRing";
 import { Progress } from "@/components/ui/progress";
 import InterviewQuestionsDialog from "./InterviewQuestionsDialog";
@@ -27,28 +26,6 @@ interface Props {
   onSelectCandidate: (id: string | null) => void;
   selectedCandidateId: string | null;
 }
-
-const DEFAULT_SETTINGS: LLMSettings = {
-  apiUrl: "",
-  apiKey: "",
-  model: "",
-  promptTemplate: "",
-  pdfApiUrl: "",
-};
-
-const fixApiUrl = (url: string): string => {
-  if (url && !url.endsWith("/chat/completions")) {
-    return url.replace(/\/+$/, "") + "/chat/completions";
-  }
-  return url;
-};
-
-const getSettings = (): LLMSettings => {
-  const s = localStorage.getItem("rs-settings");
-  const settings = s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
-  settings.apiUrl = fixApiUrl(settings.apiUrl);
-  return settings;
-};
 
 const DEFAULT_PROMPT = `你是一位专业的HR助手。请对比以下岗位描述和候选人简历，返回严格的JSON格式（不要markdown包裹）：
 {
@@ -84,12 +61,10 @@ const CandidateBoard = ({
     [setAllCandidates]
   );
 
-  // Simulated progress ticker — increments progress gradually until stopped
   const progressTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const startProgressSimulation = useCallback(
     (id: string, from: number, to: number, durationMs: number) => {
-      // Clear existing timer
       const existing = progressTimers.current.get(id);
       if (existing) clearInterval(existing);
 
@@ -122,7 +97,6 @@ const CandidateBoard = ({
     async (file: File, candidateId: string) => {
       if (!activeJob) return;
 
-      // Step 1: PDF text extraction
       updateCandidate(candidateId, { status: "extracting", progress: 5 });
       startProgressSimulation(candidateId, 5, 45, 4000);
 
@@ -135,17 +109,14 @@ const CandidateBoard = ({
         try {
           const formData = new FormData();
           formData.append("file", file);
-          const settings = getSettings();
-          const pdfUrl = settings?.pdfApiUrl || "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
-          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
           const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-          const fnUrl = `https://${projectId}.supabase.co/functions/v1/parse-pdf`;
+          const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf`;
           
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 60000);
           const res = await fetch(fnUrl, {
             method: "POST",
-            headers: { "apikey": anonKey, "x-pdf-api-url": pdfUrl },
+            headers: { "apikey": anonKey },
             body: formData,
             signal: controller.signal,
           });
@@ -169,20 +140,11 @@ const CandidateBoard = ({
         return;
       }
 
-      // Step 2: LLM evaluation
       stopProgressSimulation(candidateId);
       updateCandidate(candidateId, { resumeText, status: "evaluating", progress: 50 });
       startProgressSimulation(candidateId, 50, 90, 8000);
 
-      // Step 2: LLM evaluation
-      const settings = getSettings();
-      if (!settings.apiUrl || !settings.apiKey) {
-        toast({ title: "请先配置大模型设置", description: "点击右上角设置按钮配置 API 信息", variant: "destructive" });
-        updateCandidate(candidateId, { status: "error", error: "未配置大模型" });
-        return;
-      }
-
-      const prompt = (settings.promptTemplate || DEFAULT_PROMPT)
+      const prompt = DEFAULT_PROMPT
         .replace("{jd}", activeJob.description)
         .replace("{resume}", resumeText);
 
@@ -195,9 +157,6 @@ const CandidateBoard = ({
             "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
-            apiUrl: settings.apiUrl,
-            apiKey: settings.apiKey,
-            model: settings.model || "glm-4.7",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.3,
           }),
@@ -205,7 +164,6 @@ const CandidateBoard = ({
         if (!llmRes.ok) throw new Error(`LLM 调用失败: ${llmRes.status}`);
         const llmData = await llmRes.json();
         const content = llmData.choices?.[0]?.message?.content || "";
-        // Try to parse JSON from content
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("AI 未返回有效 JSON");
         const parsed = JSON.parse(jsonMatch[0]);
@@ -254,7 +212,6 @@ const CandidateBoard = ({
 
       setAllCandidates((prev) => [...prev, ...newCandidates]);
 
-      // Process files sequentially to avoid overwhelming the remote API
       (async () => {
         for (let i = 0; i < newCandidates.length; i++) {
           await processFile(acceptedFiles[i], newCandidates[i].id);
@@ -283,7 +240,6 @@ const CandidateBoard = ({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Dropzone */}
       <div className="p-4">
         <div
           {...getRootProps()}
@@ -301,7 +257,6 @@ const CandidateBoard = ({
         </div>
       </div>
 
-      {/* Candidate list */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {candidates.length === 0 && (
           <p className="text-xs text-muted-foreground text-center mt-16">上传简历后，候选人将在此显示</p>
@@ -337,7 +292,6 @@ const CandidateBoard = ({
                   )}
                 </div>
 
-                {/* Progress bar for in-progress states */}
                 {candidate.status !== "done" && candidate.status !== "error" && (
                   <Progress value={candidate.progress} className="h-1.5 mt-1" />
                 )}
@@ -345,10 +299,7 @@ const CandidateBoard = ({
                 {candidate.status === "done" && (
                   <div className="flex flex-wrap gap-1.5">
                     {candidate.tags.slice(0, 5).map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
-                      >
+                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                         {tag}
                       </span>
                     ))}
@@ -389,6 +340,5 @@ const CandidateBoard = ({
     </div>
   );
 };
-
 
 export default CandidateBoard;

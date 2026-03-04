@@ -5,29 +5,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { apiUrl, apiKey, model, messages, temperature } = await req.json();
-
-    if (!apiUrl || !apiKey) {
-      return new Response(JSON.stringify({ error: "Missing apiUrl or apiKey" }), {
-        status: 400,
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const response = await fetch(apiUrl, {
+    const { messages, temperature, model } = await req.json();
+
+    const response = await fetch(GATEWAY_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: model || "glm-4.7",
+        model: model || "google/gemini-2.5-flash",
         messages,
         temperature: temperature ?? 0.3,
       }),
@@ -36,18 +39,17 @@ serve(async (req) => {
     const text = await response.text();
 
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: `API error: ${response.status}`, details: text.substring(0, 500) }), {
+      return new Response(JSON.stringify({ error: `AI error: ${response.status}`, details: text.substring(0, 500) }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Try parsing as JSON
     let data;
     try {
       data = JSON.parse(text);
     } catch {
-      return new Response(JSON.stringify({ error: "API returned non-JSON response", details: text.substring(0, 500) }), {
+      return new Response(JSON.stringify({ error: "AI returned non-JSON response", details: text.substring(0, 500) }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
