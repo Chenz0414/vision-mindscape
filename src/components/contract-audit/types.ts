@@ -17,9 +17,3 @@ export interface AuditResult {
   summary: string;
 }
 
-export interface ContractSettings {
-  apiUrl: string;
-  apiKey: string;
-  model: string;
-  promptTemplate: string;
-}

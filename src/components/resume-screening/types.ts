@@ -20,7 +20,7 @@ export interface Candidate {
   fileName: string;
   name: string;
   status: CandidateStatus;
-  progress: number; // 0-100 simulated progress
+  progress: number;
   score: number;
   tags: string[];
   strengths: string[];
@@ -29,12 +29,4 @@ export interface Candidate {
   aiSummary: string;
   decision: CandidateDecision;
   error?: string;
-}
-
-export interface LLMSettings {
-  apiUrl: string;
-  apiKey: string;
-  model: string;
-  promptTemplate: string;
-  pdfApiUrl: string;
 }

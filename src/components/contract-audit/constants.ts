@@ -1,6 +1,6 @@
 import type { RiskItem } from "./types";
 
-export const STORAGE_KEY = "contract-audit-settings";
+
 
 export const DEFAULT_PROMPT = `你是一位资深的法务合同审查专家。请仔细审查以下合同文本，找出其中的法律风险和问题条款。
 

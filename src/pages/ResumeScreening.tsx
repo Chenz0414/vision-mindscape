@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import JobSidebar from "@/components/resume-screening/JobSidebar";
 import CandidateBoard from "@/components/resume-screening/CandidateBoard";
 import InsightPanel from "@/components/resume-screening/InsightPanel";
-import SettingsDialog from "@/components/resume-screening/SettingsDialog";
 import type { Job, Candidate } from "@/components/resume-screening/types";
 
 const ResumeScreening = () => {
@@ -42,12 +41,10 @@ const ResumeScreening = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      {/* Ambient */}
       <div className="ambient-orb w-[600px] h-[600px] -top-40 -left-40 opacity-[0.04]" style={{ background: "radial-gradient(circle, hsl(199 89% 48%), transparent)" }} />
       <div className="ambient-orb w-[500px] h-[500px] bottom-0 right-0 opacity-[0.03]" style={{ background: "radial-gradient(circle, hsl(217 91% 60%), transparent)" }} />
       <div className="noise-overlay" />
 
-      {/* Top bar */}
       <header className="sticky top-0 z-40 h-14 flex items-center gap-3 px-5 border-b border-border/50 glass-card">
         <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" />
@@ -55,22 +52,10 @@ const ResumeScreening = () => {
         </button>
         <div className="h-5 w-px bg-border" />
         <h1 className="font-display font-semibold text-sm">AI 简历速筛看板</h1>
-        <div className="ml-auto">
-          <SettingsDialog />
-        </div>
       </header>
 
-      {/* Three-column layout */}
       <div className="flex h-[calc(100vh-3.5rem)] relative z-10">
-        {/* Left: Job sidebar */}
-        <JobSidebar
-          jobs={jobs}
-          setJobs={setJobs}
-          activeJobId={activeJobId}
-          setActiveJobId={setActiveJobId}
-        />
-
-        {/* Center: Candidate board */}
+        <JobSidebar jobs={jobs} setJobs={setJobs} activeJobId={activeJobId} setActiveJobId={setActiveJobId} />
         <CandidateBoard
           activeJob={activeJob}
           candidates={jobCandidates}
@@ -80,8 +65,6 @@ const ResumeScreening = () => {
           onSelectCandidate={setSelectedCandidateId}
           selectedCandidateId={selectedCandidateId}
         />
-
-        {/* Right: Insight panel */}
         <AnimatePresence>
           {selectedCandidate && (
             <InsightPanel

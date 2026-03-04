@@ -4,11 +4,10 @@ import { ArrowLeft, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
-import SettingsDialog from "@/components/contract-audit/SettingsDialog";
 import ContractInput from "@/components/contract-audit/ContractInput";
 import AuditResultPanel from "@/components/contract-audit/AuditResultPanel";
-import { MOCK_CONTRACT, MOCK_RISKS, STORAGE_KEY, DEFAULT_PROMPT } from "@/components/contract-audit/constants";
-import type { RiskItem, ContractSettings } from "@/components/contract-audit/types";
+import { MOCK_CONTRACT, MOCK_RISKS, DEFAULT_PROMPT } from "@/components/contract-audit/constants";
+import type { RiskItem } from "@/components/contract-audit/types";
 
 const ContractAudit = () => {
   const navigate = useNavigate();
@@ -21,7 +20,6 @@ const ContractAudit = () => {
   const progressRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
 
-  // Cleanup progress timer
   useEffect(() => {
     return () => {
       if (progressRef.current) clearInterval(progressRef.current);
@@ -47,22 +45,11 @@ const ContractAudit = () => {
   };
 
   const handleStartAudit = async () => {
-    const settingsRaw = localStorage.getItem(STORAGE_KEY);
-    const defaults: ContractSettings = {
-      apiUrl: "",
-      apiKey: "",
-      model: "",
-      promptTemplate: DEFAULT_PROMPT,
-    };
-    const settings: ContractSettings = settingsRaw ? { ...defaults, ...JSON.parse(settingsRaw) } : defaults;
-
-    // Real API call
     setIsAuditing(true);
     setHasResult(false);
     startProgressSimulation();
 
-    // Remove duplicate block
-    const prompt = (settings.promptTemplate || DEFAULT_PROMPT).replace("{contract}", contractText);
+    const prompt = DEFAULT_PROMPT.replace("{contract}", contractText);
 
     try {
       const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`;
@@ -73,9 +60,6 @@ const ContractAudit = () => {
           "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
-          apiUrl: settings.apiUrl,
-          apiKey: settings.apiKey,
-          model: settings.model || "glm-4.7",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
         }),
@@ -85,23 +69,17 @@ const ContractAudit = () => {
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content || "";
       
-      // Try to extract JSON — could be object {risks:[...]} or array [...]
       let risksArray: any[] = [];
       let summaryText = "";
       
-      // Remove markdown code fences if present
       const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
-      
-      // Try parsing as array first, then as object
       const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
       const objectMatch = cleaned.match(/\{[\s\S]*\}/);
       
       if (arrayMatch) {
         try {
           const arr = JSON.parse(arrayMatch[0]);
-          if (Array.isArray(arr)) {
-            risksArray = arr;
-          }
+          if (Array.isArray(arr)) risksArray = arr;
         } catch {}
       }
       
@@ -115,27 +93,18 @@ const ContractAudit = () => {
       
       if (risksArray.length === 0) throw new Error("AI 未返回有效 JSON");
 
-      // Post-process: split analysis from suggestion if AI mixes them
       const splitSuggestion = (raw: string): { analysis: string; suggestion: string } => {
-        // Common patterns where actual clause text starts
         const markers = [
-          /建议修改为[：:]\s*/,
-          /修改后[的]?条款[：:]\s*/,
-          /修改后[：:]\s*/,
-          /优化后[的]?条款[：:]\s*/,
-          /优化后[：:]\s*/,
-          /替换为[：:]\s*/,
-          /改为[：:]\s*/,
-          /调整为[：:]\s*/,
+          /建议修改为[：:]\s*/, /修改后[的]?条款[：:]\s*/, /修改后[：:]\s*/,
+          /优化后[的]?条款[：:]\s*/, /优化后[：:]\s*/, /替换为[：:]\s*/,
+          /改为[：:]\s*/, /调整为[：:]\s*/,
         ];
         for (const marker of markers) {
           const match = raw.match(marker);
           if (match && match.index !== undefined) {
             const analysisPart = raw.slice(0, match.index).trim();
             const suggestionPart = raw.slice(match.index + match[0].length).trim();
-            if (suggestionPart.length > 0) {
-              return { analysis: analysisPart, suggestion: suggestionPart };
-            }
+            if (suggestionPart.length > 0) return { analysis: analysisPart, suggestion: suggestionPart };
           }
         }
         return { analysis: "", suggestion: raw };
@@ -173,12 +142,10 @@ const ContractAudit = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      {/* Ambient */}
       <div className="ambient-orb w-[600px] h-[600px] -top-40 -right-40 opacity-[0.04]" style={{ background: "radial-gradient(circle, hsl(199 89% 48%), transparent)" }} />
       <div className="ambient-orb w-[500px] h-[500px] bottom-0 -left-20 opacity-[0.03]" style={{ background: "radial-gradient(circle, hsl(217 91% 60%), transparent)" }} />
       <div className="noise-overlay" />
 
-      {/* Top bar */}
       <header className="sticky top-0 z-40 h-14 flex items-center gap-3 px-5 border-b border-border/50 glass-card">
         <button
           onClick={() => navigate("/")}
@@ -190,20 +157,11 @@ const ContractAudit = () => {
         <div className="h-5 w-px bg-border" />
         <Shield className="w-4 h-4 text-primary" />
         <h1 className="font-display font-semibold text-sm">法务合同排雷助手</h1>
-        <div className="ml-auto">
-          <SettingsDialog />
-        </div>
       </header>
 
-      {/* Main content */}
       <div className="relative z-10 h-[calc(100vh-3.5rem)] flex flex-col">
-        {/* Progress bar */}
         {isAuditing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="px-5 pt-4"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-5 pt-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-xs text-muted-foreground">AI 正在逐字核对合同条款…</span>
               <span className="text-xs text-primary font-semibold">{progress}%</span>
@@ -213,7 +171,6 @@ const ContractAudit = () => {
         )}
 
         {!hasResult ? (
-          /* Input mode */
           <div className="flex-1 p-5 min-h-0">
             <ContractInput
               contractText={contractText}
@@ -223,20 +180,10 @@ const ContractAudit = () => {
             />
           </div>
         ) : (
-          /* Result mode */
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="flex-1 p-5 min-h-0"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="flex-1 p-5 min-h-0">
             <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => {
-                  setHasResult(false);
-                  setRisks([]);
-                  setSummary("");
-                }}
+                onClick={() => { setHasResult(false); setRisks([]); setSummary(""); }}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
               >
                 ← 返回编辑
