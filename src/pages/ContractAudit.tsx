@@ -20,11 +20,7 @@ const ContractAudit = () => {
   const progressRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
 
-  useEffect(() => {
-    return () => {
-      if (progressRef.current) clearInterval(progressRef.current);
-    };
-  }, []);
+  useEffect(() => { return () => { if (progressRef.current) clearInterval(progressRef.current); }; }, []);
 
   const startProgressSimulation = () => {
     startTimeRef.current = Date.now();
@@ -37,10 +33,7 @@ const ContractAudit = () => {
   };
 
   const stopProgress = () => {
-    if (progressRef.current) {
-      clearInterval(progressRef.current);
-      progressRef.current = null;
-    }
+    if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
     setProgress(100);
   };
 
@@ -48,57 +41,28 @@ const ContractAudit = () => {
     setIsAuditing(true);
     setHasResult(false);
     startProgressSimulation();
-
     const prompt = DEFAULT_PROMPT.replace("{contract}", contractText);
-
     try {
       const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`;
       const res = await fetch(proxyUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.2,
-        }),
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }], temperature: 0.2 }),
       });
-
       if (!res.ok) throw new Error(`API 调用失败: ${res.status}`);
       const data = await res.json();
       const content = data.choices?.[0]?.message?.content || "";
-      
       let risksArray: any[] = [];
       let summaryText = "";
-      
       const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
       const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
       const objectMatch = cleaned.match(/\{[\s\S]*\}/);
-      
-      if (arrayMatch) {
-        try {
-          const arr = JSON.parse(arrayMatch[0]);
-          if (Array.isArray(arr)) risksArray = arr;
-        } catch {}
-      }
-      
-      if (risksArray.length === 0 && objectMatch) {
-        try {
-          const obj = JSON.parse(objectMatch[0]);
-          risksArray = obj.risks || [];
-          summaryText = obj.summary || "";
-        } catch {}
-      }
-      
+      if (arrayMatch) { try { const arr = JSON.parse(arrayMatch[0]); if (Array.isArray(arr)) risksArray = arr; } catch {} }
+      if (risksArray.length === 0 && objectMatch) { try { const obj = JSON.parse(objectMatch[0]); risksArray = obj.risks || []; summaryText = obj.summary || ""; } catch {} }
       if (risksArray.length === 0) throw new Error("AI 未返回有效 JSON");
 
       const splitSuggestion = (raw: string): { analysis: string; suggestion: string } => {
-        const markers = [
-          /建议修改为[：:]\s*/, /修改后[的]?条款[：:]\s*/, /修改后[：:]\s*/,
-          /优化后[的]?条款[：:]\s*/, /优化后[：:]\s*/, /替换为[：:]\s*/,
-          /改为[：:]\s*/, /调整为[：:]\s*/,
-        ];
+        const markers = [/建议修改为[：:]\s*/, /修改后[的]?条款[：:]\s*/, /修改后[：:]\s*/, /优化后[的]?条款[：:]\s*/, /优化后[：:]\s*/, /替换为[：:]\s*/, /改为[：:]\s*/, /调整为[：:]\s*/];
         for (const marker of markers) {
           const match = raw.match(marker);
           if (match && match.index !== undefined) {
@@ -120,11 +84,9 @@ const ContractAudit = () => {
           id: `risk-api-${i}`,
           level: (["high", "medium", "info"].includes(r.level || r.risk_level) ? (r.level || r.risk_level) : "info") as RiskItem["level"],
           title: r.title || r.risk_type || "未知风险",
-          excerpt,
-          analysis: rawAnalysis || extractedAnalysis,
+          excerpt, analysis: rawAnalysis || extractedAnalysis,
           suggestion: cleanSuggestion,
-          excerptStart: idx,
-          excerptEnd: idx !== -1 ? idx + excerpt.length : -1,
+          excerptStart: idx, excerptEnd: idx !== -1 ? idx + excerpt.length : -1,
         };
       });
 
@@ -146,22 +108,19 @@ const ContractAudit = () => {
       <div className="ambient-orb w-[500px] h-[500px] bottom-0 -left-20 opacity-[0.03]" style={{ background: "radial-gradient(circle, hsl(217 91% 60%), transparent)" }} />
       <div className="noise-overlay" />
 
-      <header className="sticky top-0 z-40 h-14 flex items-center gap-3 px-5 border-b border-border/50 glass-card">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
-        >
+      <header className="sticky top-0 z-40 h-14 flex items-center gap-3 px-4 sm:px-5 border-b border-border/50 glass-card">
+        <button onClick={() => navigate("/")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" />
-          返回首页
+          <span className="hidden sm:inline">返回首页</span>
         </button>
         <div className="h-5 w-px bg-border" />
         <Shield className="w-4 h-4 text-primary" />
-        <h1 className="font-display font-semibold text-sm">法务合同排雷助手</h1>
+        <h1 className="font-display font-semibold text-sm truncate">法务合同排雷助手</h1>
       </header>
 
       <div className="relative z-10 h-[calc(100vh-3.5rem)] flex flex-col">
         {isAuditing && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-5 pt-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 sm:px-5 pt-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-xs text-muted-foreground">AI 正在逐字核对合同条款…</span>
               <span className="text-xs text-primary font-semibold">{progress}%</span>
@@ -171,38 +130,22 @@ const ContractAudit = () => {
         )}
 
         {!hasResult ? (
-          <div className="flex-1 p-5 min-h-0">
-            <ContractInput
-              contractText={contractText}
-              setContractText={setContractText}
-              onStartAudit={handleStartAudit}
-              isAuditing={isAuditing}
-            />
+          <div className="flex-1 p-4 sm:p-5 min-h-0">
+            <ContractInput contractText={contractText} setContractText={setContractText} onStartAudit={handleStartAudit} isAuditing={isAuditing} />
           </div>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="flex-1 p-5 min-h-0">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="flex-1 p-4 sm:p-5 min-h-0">
             <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={() => { setHasResult(false); setRisks([]); setSummary(""); }}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-              >
+              <button onClick={() => { setHasResult(false); setRisks([]); setSummary(""); }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                 ← 返回编辑
               </button>
-              <button
-                onClick={handleStartAudit}
-                disabled={isAuditing}
-                className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
-              >
+              <button onClick={handleStartAudit} disabled={isAuditing}
+                className="text-xs text-primary hover:text-primary/80 transition-colors font-medium">
                 🔄 重新审计
               </button>
             </div>
-            <AuditResultPanel
-              contractText={contractText}
-              risks={risks}
-              summary={summary}
-              onUpdateText={setContractText}
-              onUpdateRisks={setRisks}
-            />
+            <AuditResultPanel contractText={contractText} risks={risks} summary={summary} onUpdateText={setContractText} onUpdateRisks={setRisks} />
           </motion.div>
         )}
       </div>

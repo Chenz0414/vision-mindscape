@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { X, CheckCircle2, AlertTriangle, Ban, Clock, CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ScoreRing from "./ScoreRing";
 import type { Candidate } from "./types";
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const InsightPanel = ({ candidate, onClose, onUpdateCandidate }: Props) => {
+  const isMobile = useIsMobile();
   const isLoading = candidate.status !== "done" && candidate.status !== "error";
 
   const setDecision = (decision: Candidate["decision"]) => {
@@ -20,18 +22,20 @@ const InsightPanel = ({ candidate, onClose, onUpdateCandidate }: Props) => {
 
   return (
     <motion.aside
-      initial={{ x: "100%" }}
-      animate={{ x: 0 }}
-      exit={{ x: "100%" }}
+      initial={isMobile ? { opacity: 0 } : { x: "100%" }}
+      animate={isMobile ? { opacity: 1 } : { x: 0 }}
+      exit={isMobile ? { opacity: 0 } : { x: "100%" }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      className="w-96 flex-shrink-0 border-l border-border/50 bg-card/50 backdrop-blur-xl flex flex-col overflow-hidden"
+      className={`${isMobile ? "w-full h-full" : "w-96 flex-shrink-0 border-l border-border/50"} bg-card/50 backdrop-blur-xl flex flex-col overflow-hidden`}
     >
       {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-border/50">
         <h3 className="font-display font-semibold text-sm">AI 深度洞察</h3>
-        <button onClick={onClose} className="p-1 hover:bg-secondary rounded-md transition-colors">
-          <X className="w-4 h-4" />
-        </button>
+        {!isMobile && (
+          <button onClick={onClose} className="p-1 hover:bg-secondary rounded-md transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -55,9 +59,9 @@ const InsightPanel = ({ candidate, onClose, onUpdateCandidate }: Props) => {
             {/* Profile */}
             <div className="flex items-center gap-4">
               <ScoreRing score={candidate.score} size={64} />
-              <div>
-                <h4 className="font-display font-semibold text-lg">{candidate.name}</h4>
-                <p className="text-xs text-muted-foreground">{candidate.fileName}</p>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-display font-semibold text-lg truncate">{candidate.name}</h4>
+                <p className="text-xs text-muted-foreground truncate">{candidate.fileName}</p>
                 {candidate.aiSummary && (
                   <p className="text-xs text-muted-foreground mt-1">{candidate.aiSummary}</p>
                 )}
@@ -77,9 +81,7 @@ const InsightPanel = ({ candidate, onClose, onUpdateCandidate }: Props) => {
 
             {/* Core Strengths */}
             <div>
-              <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                核心优势
-              </h5>
+              <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">核心优势</h5>
               <div className="space-y-2">
                 {candidate.strengths.map((s, i) => (
                   <div key={i} className="flex items-start gap-2.5 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
@@ -93,9 +95,7 @@ const InsightPanel = ({ candidate, onClose, onUpdateCandidate }: Props) => {
             {/* Risks */}
             {candidate.risks.length > 0 && (
               <div>
-                <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                  风险预警
-                </h5>
+                <h5 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">风险预警</h5>
                 <div className="space-y-2">
                   {candidate.risks.map((r, i) => (
                     <div key={i} className="flex items-start gap-2.5 p-3 rounded-lg bg-orange-500/5 border border-orange-500/15">

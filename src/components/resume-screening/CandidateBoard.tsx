@@ -67,18 +67,13 @@ const CandidateBoard = ({
     (id: string, from: number, to: number, durationMs: number) => {
       const existing = progressTimers.current.get(id);
       if (existing) clearInterval(existing);
-
       const steps = Math.max(1, Math.floor(durationMs / 200));
       const increment = (to - from) / steps;
       let current = from;
-
       const timer = setInterval(() => {
         current = Math.min(current + increment, to);
         updateCandidate(id, { progress: Math.round(current) });
-        if (current >= to) {
-          clearInterval(timer);
-          progressTimers.current.delete(id);
-        }
+        if (current >= to) { clearInterval(timer); progressTimers.current.delete(id); }
       }, 200);
       progressTimers.current.set(id, timer);
     },
@@ -87,21 +82,15 @@ const CandidateBoard = ({
 
   const stopProgressSimulation = useCallback((id: string) => {
     const timer = progressTimers.current.get(id);
-    if (timer) {
-      clearInterval(timer);
-      progressTimers.current.delete(id);
-    }
+    if (timer) { clearInterval(timer); progressTimers.current.delete(id); }
   }, []);
 
   const processFile = useCallback(
     async (file: File, candidateId: string) => {
       if (!activeJob) return;
-
       updateCandidate(candidateId, { status: "extracting", progress: 5 });
       startProgressSimulation(candidateId, 5, 45, 4000);
-
       let resumeText = "";
-      
       try {
         resumeText = await parsePdfLocally(file);
       } catch (localErr: any) {
@@ -111,15 +100,9 @@ const CandidateBoard = ({
           formData.append("file", file);
           const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
           const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf`;
-          
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 60000);
-          const res = await fetch(fnUrl, {
-            method: "POST",
-            headers: { "apikey": anonKey },
-            body: formData,
-            signal: controller.signal,
-          });
+          const res = await fetch(fnUrl, { method: "POST", headers: { "apikey": anonKey }, body: formData, signal: controller.signal });
           clearTimeout(timeout);
           if (!res.ok) throw new Error(`远程解析失败: ${res.status}`);
           const data = await res.json();
@@ -132,34 +115,22 @@ const CandidateBoard = ({
           return;
         }
       }
-      
       if (!resumeText.trim()) {
         stopProgressSimulation(candidateId);
         toast({ title: "PDF 解析结果为空", description: "该文件可能是扫描件，无法提取文字", variant: "destructive" });
         updateCandidate(candidateId, { status: "error", progress: 0, error: "解析结果为空" });
         return;
       }
-
       stopProgressSimulation(candidateId);
       updateCandidate(candidateId, { resumeText, status: "evaluating", progress: 50 });
       startProgressSimulation(candidateId, 50, 90, 8000);
-
-      const prompt = DEFAULT_PROMPT
-        .replace("{jd}", activeJob.description)
-        .replace("{resume}", resumeText);
-
+      const prompt = DEFAULT_PROMPT.replace("{jd}", activeJob.description).replace("{resume}", resumeText);
       try {
         const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`;
         const llmRes = await fetch(proxyUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.3,
-          }),
+          headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+          body: JSON.stringify({ messages: [{ role: "user", content: prompt }], temperature: 0.3 }),
         });
         if (!llmRes.ok) throw new Error(`LLM 调用失败: ${llmRes.status}`);
         const llmData = await llmRes.json();
@@ -167,17 +138,12 @@ const CandidateBoard = ({
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("AI 未返回有效 JSON");
         const parsed = JSON.parse(jsonMatch[0]);
-
         stopProgressSimulation(candidateId);
         updateCandidate(candidateId, {
-          status: "done",
-          progress: 100,
-          name: parsed.name || "未知",
-          score: parsed.score || 0,
-          tags: parsed.tags || [],
-          strengths: parsed.strengths || [],
-          risks: parsed.risks || [],
-          aiSummary: parsed.summary || "",
+          status: "done", progress: 100,
+          name: parsed.name || "未知", score: parsed.score || 0,
+          tags: parsed.tags || [], strengths: parsed.strengths || [],
+          risks: parsed.risks || [], aiSummary: parsed.summary || "",
         });
       } catch (err: any) {
         stopProgressSimulation(candidateId);
@@ -190,46 +156,26 @@ const CandidateBoard = ({
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (!activeJob) {
-        toast({ title: "请先选择一个岗位", variant: "destructive" });
-        return;
-      }
+      if (!activeJob) { toast({ title: "请先选择一个岗位", variant: "destructive" }); return; }
       const newCandidates: Candidate[] = acceptedFiles.map((file) => ({
-        id: crypto.randomUUID(),
-        jobId: activeJob.id,
-        fileName: file.name,
-        name: file.name.replace(/\.pdf$/i, ""),
-        status: "uploading" as const,
-        progress: 0,
-        score: 0,
-        tags: [],
-        strengths: [],
-        risks: [],
-        resumeText: "",
-        aiSummary: "",
-        decision: "pending" as const,
+        id: crypto.randomUUID(), jobId: activeJob.id, fileName: file.name,
+        name: file.name.replace(/\.pdf$/i, ""), status: "uploading" as const,
+        progress: 0, score: 0, tags: [], strengths: [], risks: [],
+        resumeText: "", aiSummary: "", decision: "pending" as const,
       }));
-
       setAllCandidates((prev) => [...prev, ...newCandidates]);
-
-      (async () => {
-        for (let i = 0; i < newCandidates.length; i++) {
-          await processFile(acceptedFiles[i], newCandidates[i].id);
-        }
-      })();
+      (async () => { for (let i = 0; i < newCandidates.length; i++) { await processFile(acceptedFiles[i], newCandidates[i].id); } })();
     },
     [activeJob, processFile, setAllCandidates]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { "application/pdf": [".pdf"] },
-    disabled: !activeJob,
+    onDrop, accept: { "application/pdf": [".pdf"] }, disabled: !activeJob,
   });
 
   if (!activeJob) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center">
           <Briefcase className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
           <p className="text-muted-foreground text-sm">请在左侧创建或选择一个岗位</p>
@@ -240,10 +186,10 @@ const CandidateBoard = ({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <div
           {...getRootProps()}
-          className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
+          className={`relative border-2 border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 ${
             isDragActive
               ? "border-primary bg-primary/5"
               : "border-border/50 hover:border-primary/40 hover:bg-primary/[0.02]"
@@ -257,7 +203,7 @@ const CandidateBoard = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-4 pb-4 space-y-2">
         {candidates.length === 0 && (
           <p className="text-xs text-muted-foreground text-center mt-16">上传简历后，候选人将在此显示</p>
         )}
@@ -267,15 +213,15 @@ const CandidateBoard = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => candidate.status === "done" && onSelectCandidate(candidate.id)}
-            className={`group glass-card rounded-xl p-4 cursor-pointer transition-all duration-300 hover:border-primary/30 ${
+            className={`group glass-card rounded-xl p-3 sm:p-4 cursor-pointer transition-all duration-300 hover:border-primary/30 ${
               selectedCandidateId === candidate.id ? "border-primary/50 bg-primary/5" : ""
             }`}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               {candidate.status === "done" ? (
-                <ScoreRing score={candidate.score} size={48} />
+                <ScoreRing score={candidate.score} size={40} />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
                   {STATUS_LABELS[candidate.status].icon}
                 </div>
               )}
@@ -284,9 +230,9 @@ const CandidateBoard = ({
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium truncate">{candidate.name}</span>
                   {candidate.status !== "done" && candidate.status !== "error" && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
                       {STATUS_LABELS[candidate.status].icon}
-                      {STATUS_LABELS[candidate.status].label}
+                      <span className="hidden sm:inline">{STATUS_LABELS[candidate.status].label}</span>
                       <span className="text-primary font-medium">{candidate.progress}%</span>
                     </span>
                   )}
@@ -298,11 +244,16 @@ const CandidateBoard = ({
 
                 {candidate.status === "done" && (
                   <div className="flex flex-wrap gap-1.5">
-                    {candidate.tags.slice(0, 5).map((tag) => (
+                    {candidate.tags.slice(0, 3).map((tag) => (
                       <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                         {tag}
                       </span>
                     ))}
+                    {candidate.tags.length > 3 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                        +{candidate.tags.length - 3}
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -312,14 +263,16 @@ const CandidateBoard = ({
               </div>
 
               {candidate.status === "done" && (
-                <span className={`text-xs font-semibold ${candidate.score >= 80 ? "text-emerald-400" : candidate.score >= 60 ? "text-primary" : "text-muted-foreground"}`}>
+                <span className={`text-xs font-semibold flex-shrink-0 ${candidate.score >= 80 ? "text-emerald-400" : candidate.score >= 60 ? "text-primary" : "text-muted-foreground"}`}>
                   {candidate.score}分
                 </span>
               )}
 
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {candidate.status === "done" && activeJob && (
-                  <InterviewQuestionsDialog candidate={candidate} jobDescription={activeJob.description} />
+                  <span className="hidden sm:inline-flex">
+                    <InterviewQuestionsDialog candidate={candidate} jobDescription={activeJob.description} />
+                  </span>
                 )}
                 <button
                   onClick={(e) => {
