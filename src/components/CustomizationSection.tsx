@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Plus, Sparkles, Users, Image, FileCheck, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ContactModal from "@/components/ContactModal";
 
 const capabilities = [
   "多模态能力：文字、图片、表格一网打尽",
@@ -18,9 +20,11 @@ const tools = [
 
 const CustomizationSection = () => {
   const navigate = useNavigate();
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <section id="customization" className="relative py-32 overflow-hidden">
+      <ContactModal open={modalOpen} onClose={() => setModalOpen(false)} />
       {/* Local ambient glow */}
       <div
         className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full opacity-[0.06] blur-[120px]"
@@ -70,6 +74,7 @@ const CustomizationSection = () => {
             </ul>
 
             <motion.button
+              onClick={() => setModalOpen(true)}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="px-8 py-3.5 rounded-lg bg-primary text-primary-foreground font-semibold transition-all duration-300 hover:shadow-[0_0_30px_-5px_hsl(199_89%_48%_/_0.5)]"

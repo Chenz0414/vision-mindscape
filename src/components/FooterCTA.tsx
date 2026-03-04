@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import ritaLogo from "@/assets/rita-logo.webp";
 import ritaText from "@/assets/rita-text.webp";
+import ContactModal from "@/components/ContactModal";
 
 const FooterCTA = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <section id="footer" className="relative py-32 overflow-hidden">
+      <ContactModal open={modalOpen} onClose={() => setModalOpen(false)} />
       <div
         className="absolute inset-0 opacity-20"
         style={{
@@ -29,6 +34,7 @@ const FooterCTA = () => {
           </p>
 
           <motion.button
+            onClick={() => setModalOpen(true)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
             className="inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-primary text-primary-foreground font-semibold text-lg transition-all duration-300 hover:shadow-[0_0_40px_-5px_hsl(199_89%_48%_/_0.5)]"
