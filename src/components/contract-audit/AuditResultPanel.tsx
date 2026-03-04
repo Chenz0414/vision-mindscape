@@ -303,19 +303,19 @@ const AuditResultPanel = ({ contractText, risks, summary, onUpdateText, onUpdate
                     </p>
                   </div>
 
-                  {/* Analysis (分析) */}
+                  {/* Analysis (问题解析) */}
                   {risk.analysis && (
                     <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-muted/30">
-                      <p className="text-[10px] font-medium text-muted-foreground mb-1">🔍 分析</p>
+                      <p className="text-[10px] font-medium text-muted-foreground mb-1">🔍 问题解析</p>
                       <p className="text-xs text-foreground/60 leading-relaxed">
                         {risk.analysis}
                       </p>
                     </div>
                   )}
 
-                  {/* Suggestion (优化后) */}
+                  {/* Suggestion (改动建议) */}
                   <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
-                    <p className="text-[10px] font-medium text-primary/70 mb-1">✨ 优化后</p>
+                    <p className="text-[10px] font-medium text-primary/70 mb-1">✏️ 改动建议</p>
                     <p className="text-xs text-foreground/70 leading-relaxed">
                       {risk.suggestion}
                     </p>
