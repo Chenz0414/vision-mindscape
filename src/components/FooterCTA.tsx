@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import ritaLogo from "@/assets/rita-logo.webp";
+import ritaText from "@/assets/rita-text.webp";
 
 const FooterCTA = () => {
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section id="footer" className="relative py-32 overflow-hidden">
       <div
         className="absolute inset-0 opacity-20"
         style={{
@@ -40,8 +42,9 @@ const FooterCTA = () => {
       {/* Footer */}
       <div className="container relative z-10 mt-24 pt-8 border-t border-border/50">
         <div className="flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
-          <div className="font-display font-bold text-gradient-primary text-lg mb-4 md:mb-0">
-            Rita AI
+          <div className="flex items-center gap-2 mb-4 md:mb-0">
+            <img src={ritaLogo} alt="Rita Logo" className="h-7 w-7" />
+            <img src={ritaText} alt="Rita" className="h-4" />
           </div>
           <p>© 2026 Rita AI. All rights reserved.</p>
         </div>

@@ -27,7 +27,7 @@ const departments = [
 
 const DepartmentsSection = () => {
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section id="departments" className="relative py-32 overflow-hidden">
       <div className="absolute inset-0 grid-bg opacity-20" />
       <div
         className="absolute bottom-0 left-1/4 w-[600px] h-[400px] rounded-full opacity-[0.05] blur-[120px]"
