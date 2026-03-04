@@ -18,6 +18,7 @@ interface FormData {
   name: string;
   contact: string;
   company: string;
+  teamSize: string;
   requirement: string;
 }
 
@@ -25,6 +26,7 @@ interface FormErrors {
   name?: string;
   contact?: string;
   company?: string;
+  teamSize?: string;
   requirement?: string;
 }
 
@@ -35,11 +37,19 @@ const requirementOptions = [
   "其他定制需求",
 ];
 
+const teamSizeOptions = [
+  "1~10人",
+  "11~30人",
+  "31~100人",
+  "100人以上",
+];
+
 const ContactModal = ({ open, onClose }: ContactModalProps) => {
   const [form, setForm] = useState<FormData>({
     name: "",
     contact: "",
     company: "",
+    teamSize: "",
     requirement: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -51,6 +61,7 @@ const ContactModal = ({ open, onClose }: ContactModalProps) => {
     if (!form.name.trim()) newErrors.name = "请填写姓名/称谓";
     if (!form.contact.trim()) newErrors.contact = "请填写联系电话或微信";
     if (!form.company.trim()) newErrors.company = "请填写公司全称";
+    if (!form.teamSize) newErrors.teamSize = "请选择团队规模";
     if (!form.requirement) newErrors.requirement = "请选择核心需求";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -66,6 +77,7 @@ const ContactModal = ({ open, onClose }: ContactModalProps) => {
       name: form.name.trim(),
       contact: form.contact.trim(),
       company: form.company.trim(),
+      teamSize: form.teamSize,
       requirement: form.requirement,
     };
     console.log(
@@ -85,7 +97,7 @@ const ContactModal = ({ open, onClose }: ContactModalProps) => {
     onClose();
     // 延迟重置，等关闭动画结束
     setTimeout(() => {
-      setForm({ name: "", contact: "", company: "", requirement: "" });
+      setForm({ name: "", contact: "", company: "", teamSize: "", requirement: "" });
       setErrors({});
       setLoading(false);
       setSuccess(false);
@@ -235,37 +247,70 @@ const ContactModal = ({ open, onClose }: ContactModalProps) => {
                       )}
                     </div>
 
-                    {/* Row 3: 核心需求 */}
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1.5">
-                        核心需求 <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={form.requirement}
-                        onValueChange={(val) => updateField("requirement", val)}
-                      >
-                        <SelectTrigger
-                          className={`w-full bg-background/50 ${
-                            errors.requirement
-                              ? "border-red-500"
-                              : "border-border/60"
-                          }`}
+                    {/* Row 3: 团队规模 + 核心需求 */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1.5">
+                          团队规模 <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          value={form.teamSize}
+                          onValueChange={(val) => updateField("teamSize", val)}
                         >
-                          <SelectValue placeholder="请选择您的核心需求" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border/60">
-                          {requirementOptions.map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.requirement && (
-                        <p className="text-xs text-red-500 mt-1">
-                          {errors.requirement}
-                        </p>
-                      )}
+                          <SelectTrigger
+                            className={`w-full bg-background/50 ${
+                              errors.teamSize
+                                ? "border-red-500"
+                                : "border-border/60"
+                            }`}
+                          >
+                            <SelectValue placeholder="请选择" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200] bg-popover border-border/60">
+                            {teamSizeOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.teamSize && (
+                          <p className="text-xs text-red-500 mt-1">
+                            {errors.teamSize}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1.5">
+                          核心需求 <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          value={form.requirement}
+                          onValueChange={(val) => updateField("requirement", val)}
+                        >
+                          <SelectTrigger
+                            className={`w-full bg-background/50 ${
+                              errors.requirement
+                                ? "border-red-500"
+                                : "border-border/60"
+                            }`}
+                          >
+                            <SelectValue placeholder="请选择" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200] bg-popover border-border/60">
+                            {requirementOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.requirement && (
+                          <p className="text-xs text-red-500 mt-1">
+                            {errors.requirement}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
