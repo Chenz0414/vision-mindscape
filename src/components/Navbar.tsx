@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import ContactModal from "@/components/ContactModal";
 import ritaCombinedLogo from "@/assets/rita-combined-logo.png";
 
@@ -12,8 +13,10 @@ const navItems = [
 
 const Navbar = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const scrollTo = (id: string) => {
+    setMobileMenuOpen(false);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -49,15 +52,53 @@ const Navbar = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setModalOpen(true)}
-            className="text-sm px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:shadow-[0_0_20px_-5px_hsl(199_89%_48%_/_0.5)] transition-all duration-300"
+            className="hidden sm:block text-sm px-5 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:shadow-[0_0_20px_-5px_hsl(199_89%_48%_/_0.5)] transition-all duration-300"
           >
             商务合作
           </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            className="md:hidden border-t border-border/50 overflow-hidden"
+            style={{ background: "hsl(220 20% 4% / 0.98)" }}
+          >
+            <div className="container py-4 space-y-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => scrollTo(item.target)}
+                  className="block w-full text-left text-sm text-muted-foreground hover:text-foreground px-3 py-2.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <button
+                onClick={() => { setMobileMenuOpen(false); setModalOpen(true); }}
+                className="block w-full text-left text-sm text-primary font-medium px-3 py-2.5 rounded-lg hover:bg-primary/10 transition-colors sm:hidden"
+              >
+                商务合作
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
     </>
   );

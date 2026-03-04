@@ -12,9 +12,10 @@ interface Props {
   setJobs: React.Dispatch<React.SetStateAction<Job[]>>;
   activeJobId: string | null;
   setActiveJobId: (id: string | null) => void;
+  isMobile?: boolean;
 }
 
-const JobSidebar = ({ jobs, setJobs, activeJobId, setActiveJobId }: Props) => {
+const JobSidebar = ({ jobs, setJobs, activeJobId, setActiveJobId, isMobile }: Props) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [name, setName] = useState("");
@@ -62,7 +63,7 @@ const JobSidebar = ({ jobs, setJobs, activeJobId, setActiveJobId }: Props) => {
 
   return (
     <>
-      <aside className="w-64 flex-shrink-0 border-r border-border/50 flex flex-col bg-card/30">
+      <aside className={`${isMobile ? "w-full h-full" : "w-64 flex-shrink-0 border-r border-border/50"} flex flex-col bg-card/30`}>
         <div className="p-4 flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             招聘岗位
@@ -93,7 +94,7 @@ const JobSidebar = ({ jobs, setJobs, activeJobId, setActiveJobId }: Props) => {
               <span className={`text-sm truncate flex-1 ${activeJobId === job.id ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                 {job.name}
               </span>
-              <div className="hidden group-hover:flex items-center gap-1">
+              <div className={`${isMobile ? "flex" : "hidden group-hover:flex"} items-center gap-1`}>
                 <button onClick={(e) => openEdit(job, e)} className="p-1 hover:text-primary transition-colors">
                   <Pencil className="w-3 h-3" />
                 </button>
@@ -107,7 +108,7 @@ const JobSidebar = ({ jobs, setJobs, activeJobId, setActiveJobId }: Props) => {
       </aside>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingJob ? "编辑岗位" : "新建岗位"}</DialogTitle>
           </DialogHeader>
