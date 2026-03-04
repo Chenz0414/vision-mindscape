@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import heroDashboard from "@/assets/hero-dashboard.png";
+import ContactModal from "@/components/ContactModal";
 
 const HeroSection = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
+    <>
+    <ContactModal open={modalOpen} onClose={() => setModalOpen(false)} />
     <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 grid-bg opacity-40" />
@@ -41,6 +47,7 @@ const HeroSection = () => {
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => setModalOpen(true)}
                 className="px-8 py-3.5 rounded-lg bg-primary text-primary-foreground font-semibold text-base transition-all duration-300 hover:shadow-[0_0_30px_-5px_hsl(199_89%_48%_/_0.5)]"
               >
                 获取提效方案
@@ -86,6 +93,7 @@ const HeroSection = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 
