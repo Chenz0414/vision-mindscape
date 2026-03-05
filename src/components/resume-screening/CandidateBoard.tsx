@@ -102,7 +102,7 @@ const CandidateBoard = ({
           const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf`;
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 60000);
-          const res = await fetch(fnUrl, { method: "POST", headers: { "apikey": anonKey, "Content-Type": undefined as any }, body: formData, signal: controller.signal });
+          const res = await fetch(fnUrl, { method: "POST", headers: { "apikey": anonKey }, body: formData, signal: controller.signal });
           clearTimeout(timeout);
           if (!res.ok) throw new Error(`远程解析失败: ${res.status}`);
           const data = await res.json();
