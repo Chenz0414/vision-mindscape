@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-pdf-api-url",
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const DEFAULT_PDF_URL = "http://connect.westd.seetacloud.com:37672/api/v1/parse/upload";
@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const pdfApiUrl = req.headers.get("x-pdf-api-url") || DEFAULT_PDF_URL;
+    const pdfApiUrl = DEFAULT_PDF_URL;
     
     const formData = await req.formData();
     const file = formData.get("file");
